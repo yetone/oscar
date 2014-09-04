@@ -67,10 +67,10 @@
         build(this);
         self.watcher();
       };
-      arr.slice = function() {
-        args = window.Array.prototype.slice.call(arguments);
-        window.Array.prototype.slice.apply(this, args);
-        window.Array.prototype.slice.apply(this.__c__, args);
+      arr.splice = function() {
+        args = window.Array.prototype.splice.call(arguments);
+        window.Array.prototype.splice.apply(this, args);
+        window.Array.prototype.splice.apply(this.__c__, args);
         build(this);
         self.watcher();
       };
