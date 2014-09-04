@@ -1,6 +1,6 @@
 // example
 window.onload = function() {
-  window.data = {
+  window.data0 = {
     name: 'yetone',
     age: 23,
     skills: [
@@ -17,10 +17,22 @@ window.onload = function() {
       3: 'c'
     }
   };
+  window.data1 = {
+    name: 'enotey',
+    age: 12,
+    skills: [
+      'Erlang',
+      'Elixir',
+      'Haskell'
+    ]
+  };
   var oscar = new Oscar;
   oscar.modelRegister({
-    el: '#model',
-    data: data
+    el: '#model0',
+    data: data0
   });
-  var ago = new Date().getTime();
+  oscar.modelRegister({
+    el: '#model1',
+    data: data1
+  });
 };
