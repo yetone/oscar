@@ -69,7 +69,10 @@
       };
       arr.splice = function() {
         args = window.Array.prototype.slice.call(arguments);
-        buildArgs(args);
+        var subArgs = args.slice(2);
+        buildArgs([subArgs]);
+        args = args.slice(0, 2);
+        window.Array.prototype.push.apply(args, subArgs);
         window.Array.prototype.splice.apply(this, args);
         window.Array.prototype.splice.apply(this.__c__, args);
         build(this);
