@@ -129,15 +129,43 @@
       this.modelList.push({
         $el: $el,
         tpl: $el.innerHTML,
-        data: obj.data
+        data: obj.data,
+        init: false
       });
       this.watcher();
     };
     proto.watcher = function() {
+      function differ($A, $B) {
+        var $a, $b;
+        if ($A.childNodes.length !== $B.childNodes.length) {
+          $A.innerHTML = $B.innerHTML;
+        } else {
+          for (var i = 0, l = $B.childNodes.length; i < l; i++) {
+            $a = $A.childNodes[i];
+            $b = $B.childNodes[i];
+            if ($a.childNodes.length > 1) {
+              differ($a, $b);
+              continue;
+            }
+            if ($a.innerHTML !== $b.innerHTML) {
+              $a.innerHTML = $b.innerHTML;
+            }
+          }
+        }
+      }
       var self = this;
       self.modelList.forEach(function(e) {
-        e.$el.innerHTML = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data);
-        var $binds = e.$el.querySelectorAll('[oscar-bind]');
+        var $tmp = window.document.createElement('div'),
+            html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data),
+            $binds;
+        $tmp.innerHTML = html;
+        if (!e.init) {
+          e.$el.innerHTML = html;
+        } else {
+          differ(e.$el, $tmp);
+        }
+        if (e.init) return;
+        $binds = e.$el.querySelectorAll('[oscar-bind]');
         for (var i = 0, l = $binds.length; i < l; i++) {
           var $e = $binds[i],
               wc = $e.getAttribute('oscar-bind'),
@@ -147,17 +175,12 @@
             if (!wcl.hasOwnProperty(x)) continue;
             c += '[\'' + wcl[x] + '\']';
           }
-          if ($e.hasAttribute('oscar-focus')) {
-            $e.focus();
-          }
-          $e.addEventListener('focus', function() {
-            $e.setAttribute('oscar-focus', '');
-          });
           $e.addEventListener('keyup', function() {
             var s = 'e.data' + c;
             eval('(' + s + '=$e.value)');
           });
         }
+        e.init = true;
       });
     };
     return Oscar;
