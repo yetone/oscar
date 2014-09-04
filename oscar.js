@@ -12,9 +12,34 @@
           propertyList = [],
           properties,
           args;
+      function build(arr) {
+        var propertyList = [];
+        for (var i in arr.__c__) {
+          if (!arr.hasOwnProperty(i)) continue;
+          if (typeof arr[i] === 'function') continue;
+          self.genPropertyList(propertyList, i);
+        }
+        properties = '({' + propertyList.join(', ') + '})';
+        Object.defineProperties(arr, eval(properties));
+      }
+      function buildArgs(args) {
+        var a;
+        for (var i = 0, l = args.length; i < l; i++) {
+          a = args[i];
+          switch (a.constructor) {
+            case (window.Array):
+              self.buildArray(a);
+              break;
+            case (window.Object):
+              self.buildData(a);
+              break;
+          }
+        }
+      }
       arr.__c__ = [];
       arr.push = function() {
         args = window.Array.prototype.slice.call(arguments);
+        buildArgs(args);
         window.Array.prototype.push.apply(this, args);
         window.Array.prototype.push.apply(this.__c__, args);
         build(this);
@@ -36,6 +61,7 @@
       };
       arr.unshift = function() {
         args = window.Array.prototype.slice.call(arguments);
+        buildArgs(args);
         window.Array.prototype.unshift.apply(this, args);
         window.Array.prototype.unshift.apply(this.__c__, args);
         build(this);
@@ -51,16 +77,6 @@
       arr.__build = function() {
         build(this);
       };
-      function build(arr) {
-        var propertyList = [];
-        for (var i in arr.__c__) {
-          if (!arr.hasOwnProperty(i)) continue;
-          if (typeof arr[i] === 'function') continue;
-          self.genPropertyList(propertyList, i);
-        }
-        properties = '({' + propertyList.join(', ') + '})';
-        Object.defineProperties(arr, eval(properties));
-      }
       for (var i in arr) {
         if (!arr.hasOwnProperty(i)) continue;
         if (typeof arr[i] === 'function') continue;
