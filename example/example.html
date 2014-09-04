@@ -19,19 +19,21 @@
         {% end %}
       </ul>
       <div> I am 
-      {% if age > 70 %}
-      an old superman.
-      {% else if age > 50 %}
-      a superman.
-      {% else if age > 30 %}
-      an old man.
-      {% else if age > 18 %}
-      an adult.
-      {% else if age < 6 %}
-      a child.
-      {% else %}
-      a young.
-      {% end %}
+        <span style="color:red;">
+        {% if age > 70 %}
+        an old superman.
+        {% else if age > 50 %}
+        a superman.
+        {% else if age > 30 %}
+        an old man.
+        {% else if age > 18 %}
+        an adult.
+        {% else if age < 6 %}
+        a child.
+        {% else %}
+        a young.
+        {% end %}
+        </span>
       </div>
       <div>
         {{ say() }}
