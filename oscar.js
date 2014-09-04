@@ -179,9 +179,9 @@
             if (!wcl.hasOwnProperty(x)) continue;
             c += '[\'' + wcl[x] + '\']';
           }
-          $e.addEventListener('keyup', function() {
+          $e.addEventListener('input', function() {
             var s = 'e.data' + c;
-            eval('(' + s + '=$e.value)');
+            eval('(' + s + '=this.value)');
           });
         }
         e.init = true;
