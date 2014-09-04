@@ -189,9 +189,10 @@
             if (!wcl.hasOwnProperty(x)) continue;
             c += '[\'' + wcl[x] + '\']';
           }
-          $e.addEventListener('input', function() {
-            var s = 'e.data' + c;
-            eval('(' + s + '=this.value)');
+          var s = '(e.data' + c + '=this.value)';
+          (new Function('with(this){($e.addEventListener(\'input\', function() {' + s + '}))}')).call({
+            e: e,
+            $e: $e
           });
         }
         $actions = e.$el.querySelectorAll('[oscar-action]');
@@ -201,9 +202,8 @@
           as = $e.getAttribute('oscar-action');
           asl = /(\w+):(.*)/g.exec(as);
           if (asl.length !== 3) continue;
-          $e.addEventListener(asl[1], function() {
-            (new Function('with(this) {(' + asl[2] + ')}')).call(e.data);
-          });
+          e.data.$e = $e;
+          (new Function('with(this){($e.addEventListener(\'' + asl[1] + '\', function() {' + asl[2] + '}))}')).call(e.data);
         }
         e.init = true;
       });

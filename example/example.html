@@ -8,7 +8,10 @@
   <body>
     <div id="model0">
       <div>My name is {{ name }}.</div>
-      <input type="button" oscar-action="click:age++" value="My age is {{ age + 1 }}.">
+      <div>My age is {{ age }}.</div>
+      <div>Next year, my age is {{ age + 1 }}.</div>
+      <input type="button" oscar-action="click:age++" value="increase age: {{ age }}.">
+      <input type="button" oscar-action="click:age--" value="decrease age: {{ age }}.">
       <div>My skills are:</div>
       <ul>
         {% for _, skill in skills %}
@@ -16,7 +19,13 @@
         {% end %}
       </ul>
       <div> I am 
-      {% if age > 18 %}
+      {% if age > 70 %}
+      an old superman.
+      {% else if age > 50 %}
+      a superman.
+      {% else if age > 30 %}
+      an old man.
+      {% else if age > 18 %}
       an adult.
       {% else if age < 6 %}
       a child.
@@ -43,6 +52,7 @@
       <div>My name is {{ name }}.</div>
       <div>My age is {{ age + 1 }}.</div>
       <input type="text" oscar-bind="skills[0]">
+      <input type="text" oscar-bind="skills[1]">
       <div>My skills are:</div>
       <ul>
         {% for _, skill in skills %}
