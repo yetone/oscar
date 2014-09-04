@@ -8,7 +8,7 @@
   <body>
     <div id="model0">
       <div>My name is {{ name }}.</div>
-      <div>My age is {{ age + 1 }}.</div>
+      <input type="button" oscar-action="click:age++" value="My age is {{ age + 1 }}.">
       <div>My skills are:</div>
       <ul>
         {% for _, skill in skills %}

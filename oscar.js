@@ -165,7 +165,8 @@
       self.modelList.forEach(function(e) {
         var $tmp = window.document.createElement('div'),
             html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data),
-            $binds;
+            $binds,
+            $actions;
         $tmp.innerHTML = html;
         if (!e.init) {
           e.$el.innerHTML = html;
@@ -191,6 +192,17 @@
           $e.addEventListener('input', function() {
             var s = 'e.data' + c;
             eval('(' + s + '=this.value)');
+          });
+        }
+        $actions = e.$el.querySelectorAll('[oscar-action]');
+        for (i = 0, l = $actions.length; i < l; i++) {
+          var as, asl;
+          $e = $actions[i];
+          as = $e.getAttribute('oscar-action');
+          asl = /(\w+):(.*)/g.exec(as);
+          if (asl.length !== 3) continue;
+          $e.addEventListener(asl[1], function() {
+            (new Function('with(this) {(' + asl[2] + ')}')).call(e.data);
           });
         }
         e.init = true;
