@@ -68,7 +68,8 @@
         self.watcher();
       };
       arr.splice = function() {
-        args = window.Array.prototype.splice.call(arguments);
+        args = window.Array.prototype.slice.call(arguments);
+        buildArgs(args);
         window.Array.prototype.splice.apply(this, args);
         window.Array.prototype.splice.apply(this.__c__, args);
         build(this);
