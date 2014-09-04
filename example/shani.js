@@ -15,7 +15,7 @@
         return sf + a + ' (' + b + ') { ';
       });
       tpl = tpl.replace(/\{%\s*for\s+([a-zA-Z_][a-zA-Z0-9_]*),\s*([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*%\}/g, function(_, k, v, lst) {
-        return 'for (var ' + k + ' in ' + lst + ') { var ' + v + ' = ' + lst + '[' + k + ']; ';
+        return 'for (var ' + k + ' in ' + lst + ') { var ' + v + ' = ' + lst + '[' + k + '];  if (typeof ' + v + ' === \'function\') continue; if (' + k + ' === \'__c__\') continue; ';
       });
       tpl = tpl.replace(/\{%\s*else\s*%\}/g, ' } else { ');
       tpl = tpl.replace(/\{%\s*end\s*%\}/g, ' } ');
