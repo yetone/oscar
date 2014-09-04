@@ -173,8 +173,13 @@
         for (var i = 0, l = $binds.length; i < l; i++) {
           var $e = $binds[i],
               wc = $e.getAttribute('oscar-bind'),
-              wcl = wc.split('.'),
-              c = '';
+              c = '',
+              wcl;
+          wc = wc.replace(/(\[|\])/g, '.');
+          if (wc.lastIndexOf('.') === wc.length - 1) {
+            wc = wc.substr(0, wc.length - 1);
+          }
+          wcl = wc.split('.');
           for (var x in wcl) {
             if (!wcl.hasOwnProperty(x)) continue;
             c += '[\'' + wcl[x] + '\']';
