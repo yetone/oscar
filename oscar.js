@@ -150,6 +150,9 @@
             if ($a.innerHTML !== $b.innerHTML) {
               $a.innerHTML = $b.innerHTML;
             }
+            if ($a.value !== $b.value) {
+              $a.value = $b.value;
+            }
           }
         }
       }
