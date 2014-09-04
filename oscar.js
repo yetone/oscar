@@ -48,11 +48,15 @@
         build(this);
         self.watcher();
       };
+      arr.__build = function() {
+        build(this);
+      };
       function build(arr) {
+        var propertyList = [];
         for (var i in arr.__c__) {
           if (!arr.hasOwnProperty(i)) continue;
           if (typeof arr[i] === 'function') continue;
-          propertyList.push(i + ': {get: function() {return this.__c__[' + i + '];}, set: function(v) {this.__c__[' + i + '] = v; self.watcher();}}');
+          self.genPropertyList(propertyList, i);
         }
         properties = '({' + propertyList.join(', ') + '})';
         Object.defineProperties(arr, eval(properties));
@@ -62,10 +66,13 @@
         if (typeof arr[i] === 'function') continue;
         if (i === '__c__') continue;
         arr.__c__[i] = arr[i];
-        propertyList.push(i + ': {get: function() {return this.__c__[\'' + i + '\'];}, set: function(v) {this.__c__[\'' + i + '\'] = v; self.watcher();}}');
+        self.genPropertyList(propertyList, i);
       }
       properties = '({' + propertyList.join(', ') + '})';
       Object.defineProperties(arr, eval(properties));
+    };
+    proto.genPropertyList = function(lst, k) {
+      lst.push(k + ': {get: function() {return this.__c__[\'' + k + '\'];}, set: function(v) {if (v.constructor === window.Array) {self.buildArray(v)} if (v.constructor === window.Object) {self.buildData(v)} this.__c__[\'' + k + '\'] = v; self.watcher();}}');
     };
     proto.buildData = function(data) {
       var self = this,
@@ -82,7 +89,7 @@
         if (data[k].constructor === window.Object) {
           self.buildData(data[k]);
         }
-        propertyList.push(k + ': {get: function() {return this.__c__[\'' + k + '\'];}, set: function(v) {this.__c__[\'' + k + '\'] = v; self.watcher();}}');
+        self.genPropertyList(propertyList, k);
       }
       properties = '({' + propertyList.join(', ') + '})';
       Object.defineProperties(data, eval(properties));
