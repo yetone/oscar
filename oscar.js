@@ -114,14 +114,21 @@
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
         throw new Error('invailed model type');
       }
-      var $el = window.document.querySelectorAll(obj.el);
-      if (!$el.length) {
+      var $els = window.document.querySelectorAll(obj.el);
+      if (!$els.length) {
         throw new Error('cannot find the element');
       }
       this.buildData(obj.data);
+      var $el = $els[0],
+          $binds = $el.querySelectorAll('[oscar-bind]');
+      for (var i = 0, l = $binds.length; i < l; i++) {
+        var $e = $binds[i],
+            v = $e.getAttribute('oscar-bind');
+        $e.setAttribute('value', '{{' + v + '}}');
+      }
       this.modelList.push({
-        $el: $el[0],
-        tpl: $el[0].innerHTML,
+        $el: $el,
+        tpl: $el.innerHTML,
         data: obj.data
       });
       this.watcher();
@@ -130,6 +137,27 @@
       var self = this;
       self.modelList.forEach(function(e) {
         e.$el.innerHTML = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data);
+        var $binds = e.$el.querySelectorAll('[oscar-bind]');
+        for (var i = 0, l = $binds.length; i < l; i++) {
+          var $e = $binds[i],
+              wc = $e.getAttribute('oscar-bind'),
+              wcl = wc.split('.'),
+              c = '';
+          for (var x in wcl) {
+            if (!wcl.hasOwnProperty(x)) continue;
+            c += '[\'' + wcl[x] + '\']';
+          }
+          if ($e.hasAttribute('oscar-focus')) {
+            $e.focus();
+          }
+          $e.addEventListener('focus', function() {
+            $e.setAttribute('oscar-focus', '');
+          });
+          $e.addEventListener('keyup', function() {
+            var s = 'e.data' + c;
+            eval('(' + s + '=$e.value)');
+          });
+        }
       });
     };
     return Oscar;
