@@ -136,6 +136,7 @@
     };
     proto.watcher = function() {
       function differ($A, $B) {
+        if ($A.innerHTML === $B.innerHTML) return;
         var $a, $b;
         if ($A.childNodes.length !== $B.childNodes.length) {
           $A.innerHTML = $B.innerHTML;
