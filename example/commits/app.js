@@ -10,12 +10,15 @@ window.onload = function() {
         fetchData: function(branch) {
           var xhr = new XMLHttpRequest(),
               self = this;
+          data.loading = true;
           xhr.open('GET', 'https://api.github.com/repos/yetone/oscar/commits?per_page=6&sha=' + branch);
           xhr.onload = function () {
-              data.commits = JSON.parse(xhr.responseText);
+            data.loading = false;
+            data.commits = JSON.parse(xhr.responseText);
           };
           xhr.send();
         },
+        loading: false,
         commits: []
     };
 
