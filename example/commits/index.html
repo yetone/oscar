@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="../shani.js"></script>
+    <script src="../../oscar.js"></script>
+    <script src="app.js"></script>
+    <style>
+        #demo {
+            font-family: 'Helvetica', Arial, sans-serif;
+        }
+        a {
+            text-decoration: none;
+            color: #f66;
+        }
+        li {
+            line-height: 1.5em;
+            margin-bottom: 20px;
+        }
+        .author, .date {
+            font-weight: bold;
+        }
+    </style>
+  </head>
+
+  <body>
+    <div id="demo">
+        <h1>Latest Oscar.js Commits</h1>
+        <input type="radio" id="master" name="branch" oscar-action="change:fetchData(this.value)" value="master">
+        <label for="master">master</label>
+        <br>
+        <input type="radio" id="dev" name="branch" oscar-action="change:fetchData(this.value)" value="dev">
+        <label for="dev">dev</label>
+        <ul>
+          {% for _, c in commits %}
+            <li>
+                <a href="{{c.html_url}}" target="_blank" class="commit">{{c.sha.slice(0, 7)}}</a>
+                - <span class="message">{{truncate(c.commit.message)}}</span><br>
+                by <span class="author">{{c.commit.author.name}}</span>
+                at <span class="date">{{formatDate(c.commit.author.date)}}</span>
+            </li>
+          {% end %}
+        </ul>
+    </div>
+  </body>
+</html>
