@@ -116,7 +116,7 @@
     };
     proto.modelRegister = function(obj) {
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
-        throw new Error('invailed model type');
+        throw new Error('invalid model type');
       }
       var $els = window.document.querySelectorAll(obj.el);
       if (!$els.length) {
