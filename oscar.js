@@ -138,8 +138,8 @@
       });
       this.watcher();
     };
-    proto.watcher = function() {
-      function differ($A, $B) {
+    proto.utils = {
+      differ: function($A, $B) {
         if ($A.innerHTML === $B.innerHTML) return;
         var $a, $b;
         if ($A.childNodes.length !== $B.childNodes.length) {
@@ -149,7 +149,7 @@
             $a = $A.childNodes[i];
             $b = $B.childNodes[i];
             if ($a.childNodes.length > 1) {
-              differ($a, $b);
+              proto.utils.differ($a, $b);
               continue;
             }
             if ($a.innerHTML !== $b.innerHTML) {
@@ -161,6 +161,8 @@
           }
         }
       }
+    };
+    proto.watcher = function() {
       var self = this;
       self.modelList.forEach(function(e) {
         var $tmp = window.document.createElement('div'),
@@ -171,7 +173,7 @@
         if (!e.init) {
           e.$el.innerHTML = html;
         } else {
-          differ(e.$el, $tmp);
+          proto.utils.differ(e.$el, $tmp);
         }
         if (e.init) return;
         $binds = e.$el.querySelectorAll('[oscar-bind]');
