@@ -18,6 +18,14 @@
         }
         .author, .date {
             font-weight: bold;
+            color: #333;
+            margin-left: 5px;
+        }
+        .avatar {
+          width: 20px;
+          height: 20px;
+          border-radius: 50%;
+          vertical-align: middle;
         }
     </style>
   </head>
@@ -25,10 +33,10 @@
   <body>
     <div id="demo">
         <h1>Latest Oscar.js Commits</h1>
-        <input type="radio" id="master" name="branch" oscar-action="change:fetchData(this.value)" value="master">
+        <input type="radio" id="master" name="branch" oscar-bind="branch" oscar-action="change:fetchData()" value="master">
         <label for="master">master</label>
         <br>
-        <input type="radio" id="development" name="branch" oscar-action="change:fetchData(this.value)" value="development">
+        <input type="radio" id="development" name="branch" oscar-bind="branch" oscar-action="change:fetchData()" value="development">
         <label for="development">development</label>
         {% if loading %}
           <div>
@@ -40,7 +48,7 @@
               <li>
                   <a href="{{c.html_url}}" target="_blank" class="commit">{{c.sha.slice(0, 7)}}</a>
                   - <span class="message">{{truncate(c.commit.message)}}</span><br>
-                  by <span class="author">{{c.commit.author.name}}</span>
+                  by <img class="avatar" src="{{c.author.avatar_url}}"><a class="author" href="{{c.author.html_url}}" target="_blank">{{c.commit.author.name}}</a>
                   at <span class="date">{{formatDate(c.commit.author.date)}}</span>
               </li>
             {% end %}

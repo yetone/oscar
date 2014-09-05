@@ -7,17 +7,18 @@ window.onload = function() {
         formatDate: function (v) {
           return v.replace(/T|Z/g, ' ');
         },
-        fetchData: function(branch) {
+        fetchData: function() {
           var xhr = new XMLHttpRequest(),
               self = this;
           data.loading = true;
-          xhr.open('GET', 'https://api.github.com/repos/yetone/oscar/commits?per_page=6&sha=' + branch);
+          xhr.open('GET', 'https://api.github.com/repos/yetone/oscar/commits?per_page=6&sha=' + data.branch);
           xhr.onload = function () {
             data.loading = false;
             data.commits = JSON.parse(xhr.responseText);
           };
           xhr.send();
         },
+        branch: 'master',
         loading: false,
         commits: []
     };
@@ -27,6 +28,7 @@ window.onload = function() {
       el: '#demo',
       data: data
     });
-
+    data.fetchData();
+    // debug
     window.data = data;
 };

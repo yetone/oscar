@@ -213,7 +213,6 @@
           }
         }
         // oscar-class end
-        if (e.inited && !needBind) return;
         // oscar-bind
         $binds = e.$el.querySelectorAll('[oscar-bind]');
         for (var i = 0, l = $binds.length; i < l; i++) {
@@ -235,12 +234,19 @@
           if ($b.type === 'radio') {
             eventType = 'change';
           }
-          (new Function('with(this){($b.addEventListener(\'' + eventType + '\', function() {' + s + '}))}')).call({
+          if (!e.inited && needBind) {
+            (new Function('with(this){($b.addEventListener(\'' + eventType + '\', function() {' + s + '}))}')).call({
+              e: e,
+              $b: $b
+            });
+          }
+          (new Function('with(this){if (e.data' + c + ' === $b.value) {$b.hasOwnProperty(\'checked\');$b.checked = true;}}')).call({
             e: e,
             $b: $b
           });
         }
         // oscar-bind end
+        if (e.inited && !needBind) return;
         // oscar-action
         $actions = e.$el.querySelectorAll('[oscar-action]');
         for (i = 0, l = $actions.length; i < l; i++) {
