@@ -184,6 +184,7 @@
         $tmp.innerHTML = html;
         if (!e.inited) {
           e.$el.innerHTML = html;
+          e.$el.style.display = 'block';
         } else {
           needBind = proto.utils.differ(e.$el, $tmp);
         }
