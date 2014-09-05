@@ -18,6 +18,14 @@
         <li>{{ skill + "!" }}</li>
         {% end %}
       </ul>
+      {% if age > 0 %}
+      I am here!!!!!!!
+      {% end %}
+      {% if age < 0 %}
+      <div style="color:red;">
+      I am here!!!!!!!
+      </div>
+      {% end %}
       <div> I am 
         <span style="color:red;">
         {% if age > 70 %}

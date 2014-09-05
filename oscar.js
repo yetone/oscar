@@ -134,16 +134,17 @@
         $el: $el,
         tpl: $el.innerHTML,
         data: obj.data,
-        init: false
+        inited: false
       });
       this.watcher();
     };
     proto.utils = {
       differ: function($A, $B) {
         if ($A.innerHTML === $B.innerHTML) return;
-        var $a, $b;
+        var $a, $b, needBind = false;
         if ($A.childNodes.length !== $B.childNodes.length) {
           $A.innerHTML = $B.innerHTML;
+          needBind = true;
         } else {
           for (var i = 0, l = $B.childNodes.length; i < l; i++) {
             $a = $A.childNodes[i];
@@ -154,12 +155,22 @@
             }
             if ($a.innerHTML !== $b.innerHTML) {
               $a.innerHTML = $b.innerHTML;
+              if ($a.querySelectorAll('[oscar-bind]').length || $a.querySelectorAll('[oscar-bind]').length) {
+                needBind = true;
+              }
+            } else {
+              if ($a.innerHTML === undefined) {
+                if ($a.textContent !== $b.textContent) {
+                  $a.textContent = $b.textContent;
+                }
+              }
             }
             if ($a.value !== $b.value) {
               $a.value = $b.value;
             }
           }
         }
+        return needBind;
       }
     };
     proto.watcher = function() {
@@ -167,15 +178,16 @@
       self.modelList.forEach(function(e) {
         var $tmp = window.document.createElement('div'),
             html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data),
+            needBind,
             $binds,
             $actions;
         $tmp.innerHTML = html;
-        if (!e.init) {
+        if (!e.inited) {
           e.$el.innerHTML = html;
         } else {
-          proto.utils.differ(e.$el, $tmp);
+          needBind = proto.utils.differ(e.$el, $tmp);
         }
-        if (e.init) return;
+        if (e.inited && !needBind) return;
         $binds = e.$el.querySelectorAll('[oscar-bind]');
         for (var i = 0, l = $binds.length; i < l; i++) {
           var $e = $binds[i],
@@ -207,7 +219,7 @@
           e.data.$e = $e;
           (new Function('with(this){($e.addEventListener(\'' + asl[1] + '\', function() {' + asl[2] + '}))}')).call(e.data);
         }
-        e.init = true;
+        e.inited = true;
       });
     };
     return Oscar;
