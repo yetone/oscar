@@ -128,7 +128,7 @@
       for (var i = 0, l = $binds.length; i < l; i++) {
         var $e = $binds[i],
             v = $e.getAttribute('oscar-bind');
-        $e.setAttribute('value', '{{' + v + '}}');
+        $e.getAttribute('value') || $e.setAttribute('value', '{{' + v + '}}');
       }
       this.modelList.push({
         $el: $el,
@@ -231,7 +231,11 @@
             c += '[\'' + bcl[x] + '\']';
           }
           var s = '(e.data' + c + '=this.value)';
-          (new Function('with(this){($b.addEventListener(\'input\', function() {' + s + '}))}')).call({
+          var eventType = 'input';
+          if ($b.type === 'radio') {
+            eventType = 'change';
+          }
+          (new Function('with(this){($b.addEventListener(\'' + eventType + '\', function() {' + s + '}))}')).call({
             e: e,
             $b: $b
           });
