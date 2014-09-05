@@ -8,6 +8,16 @@
       #model0, #model1 {
         display: none;
       }
+      #model2, .item {
+        color: #333;
+        padding: 10px;
+        margin: 10px;
+        cursor: pointer;
+      }
+      #model2 .item.active {
+        color: #fff;
+        background-color: #888;
+      }
     </style>
   </head>
   <body>
@@ -74,6 +84,12 @@
         <li>{{ skill + "!" }}</li>
         {% end %}
       </ul>
+    </div>
+    <div id="model2">
+      <a class="item" oscar-action="click:mode='a'" oscar-class="{active: mode === 'a'}">AAA</a>
+      <a class="item" oscar-action="click:mode='b'" oscar-class="{active: mode === 'b'}">BBB</a>
+      <a class="item" oscar-action="click:mode='c'" oscar-class="{active: mode === 'c'}">CCC</a>
+      <a class="item" oscar-action="click:mode='d'" oscar-class="{active: mode === 'd'}">DDD</a>
     </div>
   </body>
 </html>

@@ -177,8 +177,9 @@
       var self = this;
       self.modelList.forEach(function(e) {
         var $tmp = window.document.createElement('div'),
-            html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<'))(e.data),
+            html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(e.data),
             needBind,
+            $classes,
             $binds,
             $actions;
         $tmp.innerHTML = html;
@@ -188,38 +189,66 @@
         } else {
           needBind = proto.utils.differ(e.$el, $tmp);
         }
+        // oscar-class
+        $classes = e.$el.querySelectorAll('[oscar-class]');
+        for (i = 0, l = $classes.length; i < l; i++) {
+          var cc, ccl;
+          $c = $classes[i];
+          cc = $c.getAttribute('oscar-class');
+          try {
+            cc = cc.replace(new window.RegExp("'", 'g'), '"');
+            ccl = (new Function('with(this){return (' + cc + ');}')).call(e.data);
+          } catch(err) {
+            console.log(err);
+            break;
+          }
+          e.data.__$c__ = $c;
+          for (var cls in ccl) {
+            if (!ccl.hasOwnProperty(cls)) continue;
+            if (ccl[cls]) {
+              (new Function('with(this){(__$c__.classList.add(\'' + cls + '\'))}')).call(e.data);
+            } else {
+              (new Function('with(this){(__$c__.classList.remove(\'' + cls + '\'))}')).call(e.data);
+            }
+          }
+        }
+        // oscar-class end
         if (e.inited && !needBind) return;
+        // oscar-bind
         $binds = e.$el.querySelectorAll('[oscar-bind]');
         for (var i = 0, l = $binds.length; i < l; i++) {
-          var $e = $binds[i],
-              wc = $e.getAttribute('oscar-bind'),
+          var $b = $binds[i],
+              bc = $b.getAttribute('oscar-bind'),
               c = '',
-              wcl;
-          wc = wc.replace(/(\[|\])/g, '.');
-          if (wc.lastIndexOf('.') === wc.length - 1) {
-            wc = wc.substr(0, wc.length - 1);
+              bcl;
+          bc = bc.replace(/(\[|\])/g, '.');
+          if (bc.lastIndexOf('.') === bc.length - 1) {
+            bc = bc.substr(0, bc.length - 1);
           }
-          wcl = wc.split('.');
-          for (var x in wcl) {
-            if (!wcl.hasOwnProperty(x)) continue;
-            c += '[\'' + wcl[x] + '\']';
+          bcl = bc.split('.');
+          for (var x in bcl) {
+            if (!bcl.hasOwnProperty(x)) continue;
+            c += '[\'' + bcl[x] + '\']';
           }
           var s = '(e.data' + c + '=this.value)';
-          (new Function('with(this){($e.addEventListener(\'input\', function() {' + s + '}))}')).call({
+          (new Function('with(this){($b.addEventListener(\'input\', function() {' + s + '}))}')).call({
             e: e,
-            $e: $e
+            $b: $b
           });
         }
+        // oscar-bind end
+        // oscar-action
         $actions = e.$el.querySelectorAll('[oscar-action]');
         for (i = 0, l = $actions.length; i < l; i++) {
-          var as, asl;
-          $e = $actions[i];
-          as = $e.getAttribute('oscar-action');
-          asl = /(\w+):(.*)/g.exec(as);
-          if (asl.length !== 3) continue;
-          e.data.$e = $e;
-          (new Function('with(this){($e.addEventListener(\'' + asl[1] + '\', function() {' + asl[2] + '}))}')).call(e.data);
+          var ac, acl, $a;
+          $a = $actions[i];
+          ac = $a.getAttribute('oscar-action');
+          acl = /(\w+):(.*)/g.exec(ac);
+          if (acl.length !== 3) continue;
+          e.data.__$a__ = $a;
+          (new Function('with(this){(__$a__.addEventListener(\'' + acl[1] + '\', function() {' + acl[2] + '}))}')).call(e.data);
         }
+        // oscar-action end
         e.inited = true;
       });
     };
