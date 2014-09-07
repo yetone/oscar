@@ -142,28 +142,28 @@
     };
     proto.watcher = function() {
       var self = this;
-      self.modelList.forEach(function(e) {
+      self.modelList.forEach(function(model) {
         var $tmp = window.document.createElement('div'),
-            html = window.shani.compile(e.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(e.data),
+            html = window.shani.compile(model.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(model.data),
             needBind,
             $classes,
             $binds,
             $actions;
         $tmp.innerHTML = html;
-        if (!e.inited) {
-          e.$el.innerHTML = html;
-          e.$el.style.display = 'block';
+        if (!model.inited) {
+          model.$el.innerHTML = html;
+          model.$el.style.display = 'block';
         } else {
-          needBind = proto.utils.differ(e.$el, $tmp);
+          needBind = proto.utils.differ(model.$el, $tmp);
         }
         // oscar-class
-        $classes = toArray(e.$el.querySelectorAll('[oscar-class]'));
+        $classes = toArray(model.$el.querySelectorAll('[oscar-class]'));
         $classes.forEach(function($c, i) {
           var cc = $c.getAttribute('oscar-class'),
               ccl;
           try {
             cc = cc.replace(new window.RegExp("'", 'g'), '"');
-            ccl = runWithScope(cc, e.data);
+            ccl = runWithScope(cc, model.data);
           } catch(err) {
             console.log(err);
             return;
@@ -177,9 +177,9 @@
           });
         });
         // oscar-class end
-        if (e.inited && !needBind) return;
+        if (model.inited && !needBind) return;
         // oscar-bind
-        $binds = toArray(e.$el.querySelectorAll('[oscar-bind]'));
+        $binds = toArray(model.$el.querySelectorAll('[oscar-bind]'));
         $binds.forEach(function($b, i) {
           var bc = $b.getAttribute('oscar-bind'),
               c = '',
@@ -193,7 +193,7 @@
             if (!bcl.hasOwnProperty(x)) continue;
             c += '[\'' + bcl[x] + '\']';
           }
-          var s = '(e.data' + c + ' = this.value)';
+          var s = '(model.data' + c + ' = this.value)';
           var eventType = 'input';
           if ($b.type === 'radio') {
             eventType = 'change';
@@ -201,23 +201,23 @@
           $b.addEventListener(eventType, function() {
             eval(s);
           });
-          if (eval('(e.data' + c + ' === $b.value)')) {
+          if (eval('(model.data' + c + ' === $b.value)')) {
             $b.hasOwnProperty('checked') && ($b.checked = true);
           }
         });
         // oscar-bind end
         // oscar-action
-        $actions = toArray(e.$el.querySelectorAll('[oscar-action]'));
+        $actions = toArray(model.$el.querySelectorAll('[oscar-action]'));
         $actions.forEach(function($a, i) {
           var ac = $a.getAttribute('oscar-action'),
               acl = /(\w+):(.*)/g.exec(ac);
           if (acl.length !== 3) return;
           $a.addEventListener(acl[1], function() {
-            runWithScope(acl[2], e.data);
+            runWithScope(acl[2], model.data);
           });
         });
         // oscar-action end
-        e.inited = true;
+        model.inited = true;
       });
     };
     return Oscar;
