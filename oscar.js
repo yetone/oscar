@@ -10,7 +10,7 @@
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
-  Model = (function() {
+  var Model = (function() {
     function Model(obj) {
       this.$el = obj.$el;
       this.tpl = obj.tpl;
