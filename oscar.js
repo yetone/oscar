@@ -186,7 +186,7 @@
       self.modelList.forEach(function(model) {
         var $tmp = window.document.createElement('div'),
             html = window.shani.compile(model.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(model.data),
-            needBind,
+            needBind = false,
             $classes,
             $binds,
             $actions;
@@ -197,8 +197,11 @@
         } else {
           needBind = proto.utils.differ(model.$el, $tmp);
         }
-        // oscar-class
+        needBind = needBind || !model.inited;
         $classes = toArray(model.$el.querySelectorAll('[oscar-class]'));
+        $binds = toArray(model.$el.querySelectorAll('[oscar-bind]'));
+        $actions = toArray(model.$el.querySelectorAll('[oscar-action]'));
+        // oscar-class
         $classes.forEach(function($c, i) {
           var cc = $c.getAttribute('oscar-class'),
               ccl;
@@ -218,9 +221,7 @@
           });
         });
         // oscar-class end
-        if (model.inited && !needBind) return;
         // oscar-bind
-        $binds = toArray(model.$el.querySelectorAll('[oscar-bind]'));
         $binds.forEach(function($b, i) {
           var bc = $b.getAttribute('oscar-bind'),
               c = '',
@@ -239,16 +240,17 @@
           if ($b.type === 'radio') {
             eventType = 'change';
           }
+          if ($b.type === 'radio' && eval('(model.data' + c + ' === $b.value)')) {
+            $b.checked = true;
+          }
+          if (!needBind) return;
           $b.addEventListener(eventType, function() {
             eval(s);
           });
-          if (eval('(model.data' + c + ' === $b.value)')) {
-            $b.hasOwnProperty('checked') && ($b.checked = true);
-          }
         });
         // oscar-bind end
         // oscar-action
-        $actions = toArray(model.$el.querySelectorAll('[oscar-action]'));
+        if (!needBind) return;
         $actions.forEach(function($a, i) {
           var ac = $a.getAttribute('oscar-action'),
               acl = /(\w+):(.*)/g.exec(ac);
