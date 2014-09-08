@@ -10,6 +10,39 @@
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
+  function differ($A, $B) {
+    if ($A.innerHTML === $B.innerHTML) return;
+    var $a, $b, needBind = false;
+    if ($A.childNodes.length !== $B.childNodes.length) {
+      $A.innerHTML = $B.innerHTML;
+      needBind = true;
+    } else {
+      for (var i = 0, l = $B.childNodes.length; i < l; i++) {
+        $a = $A.childNodes[i];
+        $b = $B.childNodes[i];
+        if ($a.childNodes.length > 1) {
+          differ($a, $b);
+          continue;
+        }
+        if ($a.innerHTML !== $b.innerHTML) {
+          $a.innerHTML = $b.innerHTML;
+          if ($a.querySelectorAll('[oscar-bind]').length || $a.querySelectorAll('[oscar-bind]').length) {
+            needBind = true;
+          }
+        } else {
+          if ($a.innerHTML === undefined) {
+            if ($a.textContent !== $b.textContent) {
+              $a.textContent = $b.textContent;
+            }
+          }
+        }
+        if ($a.value !== $b.value) {
+          $a.value = $b.value;
+        }
+      }
+    }
+    return needBind;
+  }
   var Model = (function() {
     function Model(obj) {
       this.$el = obj.$el;
@@ -42,6 +75,86 @@
       self.on('change:' + e, cbk);
       cbk();
     };
+    proto.render = function() {
+      var self = this,
+          $tmp = window.document.createElement('div'),
+          html = window.shani.compile(self.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(self.data),
+          needBind = false,
+          $classes,
+          $binds,
+          $actions;
+      $tmp.innerHTML = html;
+      if (!self.inited) {
+        self.$el.innerHTML = html;
+        self.$el.style.display = 'block';
+      } else {
+        needBind = differ(self.$el, $tmp);
+      }
+      needBind = needBind || !self.inited;
+      $classes = toArray(self.$el.querySelectorAll('[oscar-class]'));
+      $binds = toArray(self.$el.querySelectorAll('[oscar-bind]'));
+      $actions = toArray(self.$el.querySelectorAll('[oscar-action]'));
+      // oscar-class
+      $classes.forEach(function($c, i) {
+        var cc = $c.getAttribute('oscar-class'),
+            ccl;
+        try {
+          cc = cc.replace(new window.RegExp("'", 'g'), '"');
+          ccl = runWithScope(cc, self.data);
+        } catch(err) {
+          console.log(err);
+          return;
+        }
+        getObjKeys(ccl).forEach(function(cls) {
+          if (ccl[cls] === true) {
+            $c.classList.add(cls);
+          } else {
+            $c.classList.remove(cls);
+          }
+        });
+      });
+      // oscar-class end
+      // oscar-bind
+      $binds.forEach(function($b, i) {
+        var bc = $b.getAttribute('oscar-bind'),
+            c = '',
+            bcl;
+        bc = bc.replace(/(\[|\])/g, '.');
+        if (bc.lastIndexOf('.') === bc.length - 1) {
+          bc = bc.substr(0, bc.length - 1);
+        }
+        bcl = bc.split('.');
+        for (var x in bcl) {
+          if (!bcl.hasOwnProperty(x)) continue;
+          c += '[\'' + bcl[x] + '\']';
+        }
+        var s = '(self.data' + c + ' = this.value)';
+        var eventType = 'input';
+        if ($b.type === 'radio') {
+          eventType = 'change';
+        }
+        if ($b.type === 'radio' && eval('(self.data' + c + ' === $b.value)')) {
+          $b.checked = true;
+        }
+        if (!needBind) return;
+        $b.addEventListener(eventType, function() {
+          eval(s);
+        });
+      });
+      // oscar-bind end
+      // oscar-action
+      if (!needBind) return;
+      $actions.forEach(function($a, i) {
+        var ac = $a.getAttribute('oscar-action'),
+            acl = /(\w+):(.*)/g.exec(ac);
+        if (acl.length !== 3) return;
+        $a.addEventListener(acl[1], function() {
+          runWithScope(acl[2], self.data);
+        });
+      });
+      // oscar-action end
+      self.inited = true;
+    };
     return Model;
   })();
   window.Oscar = (function() {
@@ -52,7 +165,7 @@
     var proto = Oscar.prototype;
     proto.__init__ = function() {
     };
-    proto.buildArray = function(arr) {
+    proto.buildArray = function(arr, model) {
       var self = this,
           args;
       ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
@@ -61,19 +174,21 @@
           _args = toArray(arguments);
           if (method === 'splice') {
             var subArgs = args.slice(2);
-            self.buildObj([subArgs]);
+            self.buildObj([subArgs], model);
             args = args.slice(0, 2);
             arrProto.push.apply(args, subArgs);
           } else {
-            self.buildObj(args);
+            self.buildObj(args, model);
           }
           arrProto[method].apply(this, args);
           arrProto[method].apply(this.__c__, _args);
-          self.buildObj(this);
-          self.watcher();
+          self.buildObj(this, model);
+          if (model !== undefined) {
+            model.render();
+          }
         };
       });
-      self.buildObj(arr);
+      self.buildObj(arr, model);
     };
     proto.buildObj = function(obj, model) {
       var self = this,
@@ -90,10 +205,10 @@
         if (typeof obj[k] === 'function') return;
         obj.__c__[k] = obj[k];
         if (obj[k].constructor === window.Array) {
-          self.buildArray(obj[k]);
+          self.buildArray(obj[k], model);
         }
         if (obj[k].constructor === window.Object) {
-          self.buildObj(obj[k]);
+          self.buildObj(obj[k], model);
         }
         properties[k] = {
           get: function() {
@@ -102,17 +217,17 @@
           set: function(v) {
             switch(v.constructor) {
               case window.Array:
-                self.buildArray(v);
+                self.buildArray(v, model);
                 break;
               case window.Object:
-                self.buildObj(v);
+                self.buildObj(v, model);
                 break;
             }
             this.__c__[k] = v;
             if (model !== undefined) {
               model.trigger('change:' + k);
+              model.render();
             }
-            self.watcher();
           }
         }
         if (model !== undefined) {
@@ -143,124 +258,13 @@
       });
       this.buildObj(model.data, model);
       this.modelList.push(model);
-      this.watcher();
+      model.render();
       return model;
-    };
-    proto.utils = {
-      differ: function($A, $B) {
-        if ($A.innerHTML === $B.innerHTML) return;
-        var $a, $b, needBind = false;
-        if ($A.childNodes.length !== $B.childNodes.length) {
-          $A.innerHTML = $B.innerHTML;
-          needBind = true;
-        } else {
-          for (var i = 0, l = $B.childNodes.length; i < l; i++) {
-            $a = $A.childNodes[i];
-            $b = $B.childNodes[i];
-            if ($a.childNodes.length > 1) {
-              proto.utils.differ($a, $b);
-              continue;
-            }
-            if ($a.innerHTML !== $b.innerHTML) {
-              $a.innerHTML = $b.innerHTML;
-              if ($a.querySelectorAll('[oscar-bind]').length || $a.querySelectorAll('[oscar-bind]').length) {
-                needBind = true;
-              }
-            } else {
-              if ($a.innerHTML === undefined) {
-                if ($a.textContent !== $b.textContent) {
-                  $a.textContent = $b.textContent;
-                }
-              }
-            }
-            if ($a.value !== $b.value) {
-              $a.value = $b.value;
-            }
-          }
-        }
-        return needBind;
-      }
     };
     proto.watcher = function() {
       var self = this;
       self.modelList.forEach(function(model) {
-        var $tmp = window.document.createElement('div'),
-            html = window.shani.compile(model.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(model.data),
-            needBind = false,
-            $classes,
-            $binds,
-            $actions;
-        $tmp.innerHTML = html;
-        if (!model.inited) {
-          model.$el.innerHTML = html;
-          model.$el.style.display = 'block';
-        } else {
-          needBind = proto.utils.differ(model.$el, $tmp);
-        }
-        needBind = needBind || !model.inited;
-        $classes = toArray(model.$el.querySelectorAll('[oscar-class]'));
-        $binds = toArray(model.$el.querySelectorAll('[oscar-bind]'));
-        $actions = toArray(model.$el.querySelectorAll('[oscar-action]'));
-        // oscar-class
-        $classes.forEach(function($c, i) {
-          var cc = $c.getAttribute('oscar-class'),
-              ccl;
-          try {
-            cc = cc.replace(new window.RegExp("'", 'g'), '"');
-            ccl = runWithScope(cc, model.data);
-          } catch(err) {
-            console.log(err);
-            return;
-          }
-          getObjKeys(ccl).forEach(function(cls) {
-            if (ccl[cls] === true) {
-              $c.classList.add(cls);
-            } else {
-              $c.classList.remove(cls);
-            }
-          });
-        });
-        // oscar-class end
-        // oscar-bind
-        $binds.forEach(function($b, i) {
-          var bc = $b.getAttribute('oscar-bind'),
-              c = '',
-              bcl;
-          bc = bc.replace(/(\[|\])/g, '.');
-          if (bc.lastIndexOf('.') === bc.length - 1) {
-            bc = bc.substr(0, bc.length - 1);
-          }
-          bcl = bc.split('.');
-          for (var x in bcl) {
-            if (!bcl.hasOwnProperty(x)) continue;
-            c += '[\'' + bcl[x] + '\']';
-          }
-          var s = '(model.data' + c + ' = this.value)';
-          var eventType = 'input';
-          if ($b.type === 'radio') {
-            eventType = 'change';
-          }
-          if ($b.type === 'radio' && eval('(model.data' + c + ' === $b.value)')) {
-            $b.checked = true;
-          }
-          if (!needBind) return;
-          $b.addEventListener(eventType, function() {
-            eval(s);
-          });
-        });
-        // oscar-bind end
-        // oscar-action
-        if (!needBind) return;
-        $actions.forEach(function($a, i) {
-          var ac = $a.getAttribute('oscar-action'),
-              acl = /(\w+):(.*)/g.exec(ac);
-          if (acl.length !== 3) return;
-          $a.addEventListener(acl[1], function() {
-            runWithScope(acl[2], model.data);
-          });
-        });
-        // oscar-action end
-        model.inited = true;
+        model.render();
       });
     };
     return Oscar;
