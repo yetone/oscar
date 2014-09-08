@@ -23,7 +23,7 @@
       $a = $A.childNodes[i];
       $b = $B.childNodes[i];
       if ($a.childNodes.length > 1) {
-        differ($a, $b);
+        needBind = differ($a, $b);
         continue;
       }
       if ($a.innerHTML !== $b.innerHTML) {
