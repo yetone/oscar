@@ -34,10 +34,10 @@
   <body>
     <div id="demo">
         <h1>Latest Oscar.js Commits</h1>
-        <input type="radio" id="master" name="branch" oscar-bind="branch" oscar-action="change:fetchData()" value="master">
+        <input type="radio" id="master" name="branch" oscar-bind="branch" value="master">
         <label for="master">master</label>
         <br>
-        <input type="radio" id="development" name="branch" oscar-bind="branch" oscar-action="change:fetchData()" value="development">
+        <input type="radio" id="development" name="branch" oscar-bind="branch" value="development">
         <label for="development">development</label>
         {% if loading %}
           <div>

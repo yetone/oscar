@@ -10,6 +10,40 @@
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
+  Model = (function() {
+    function Model(obj) {
+      this.$el = obj.$el;
+      this.tpl = obj.tpl;
+      this.data = obj.data;
+      this.inited = obj.inited || false;
+      this.eventObj = {};
+    }
+    var proto = Model.prototype;
+    proto.on = function(e, cbk) {
+      var self = this;
+      if (self.eventObj[e] === undefined) {
+        self.eventObj[e] = [];
+      }
+      self.eventObj[e].push(cbk);
+    };
+    proto.trigger = function(e) {
+      var self = this;
+      getObjKeys(self.eventObj).forEach(function(k) {
+        if (k === e) {
+          self.eventObj[k].forEach(function(cbk) {
+            cbk.call(self);
+          });
+        }
+      });
+    };
+    proto.watch = function(e, cbk) {
+      var self = this;
+      self.on('set:' + e, cbk);
+      self.on('change:' + e, cbk);
+      cbk();
+    };
+    return Model;
+  })();
   window.Oscar = (function() {
     function Oscar() {
       this.modelList = [];
@@ -41,7 +75,7 @@
       });
       self.buildObj(arr);
     };
-    proto.buildObj = function(obj) {
+    proto.buildObj = function(obj, model) {
       var self = this,
           properties = {};
       if (obj.__c__ === undefined) {
@@ -75,8 +109,14 @@
                 break;
             }
             this.__c__[k] = v;
+            if (model !== undefined) {
+              model.trigger('change:' + k);
+            }
             self.watcher();
           }
+        }
+        if (model !== undefined) {
+          model.trigger('set:' + k);
         }
       });
       defs(obj, properties);
@@ -89,21 +129,22 @@
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
-      this.buildObj(obj.data);
       var $el = $els[0],
-          $binds = $el.querySelectorAll('[oscar-bind]');
-      for (var i = 0, l = $binds.length; i < l; i++) {
-        var $e = $binds[i],
-            v = $e.getAttribute('oscar-bind');
-        $e.getAttribute('value') || $e.setAttribute('value', '{{' + v + '}}');
-      }
-      this.modelList.push({
+          $binds = toArray($el.querySelectorAll('[oscar-bind]')),
+          model;
+      $binds.forEach(function($b) {
+        var v = $b.getAttribute('oscar-bind');
+        $b.getAttribute('value') || $b.setAttribute('value', '{{' + v + '}}');
+      });
+      model = new Model({
         $el: $el,
         tpl: $el.innerHTML,
-        data: obj.data,
-        inited: false
+        data: obj.data
       });
+      this.buildObj(model.data, model);
+      this.modelList.push(model);
       this.watcher();
+      return model;
     };
     proto.utils = {
       differ: function($A, $B) {
