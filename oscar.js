@@ -11,34 +11,33 @@
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
   function differ($A, $B) {
-    if ($A.innerHTML === $B.innerHTML) return;
-    var $a, $b, needBind = false;
+    if ($A.innerHTML === $B.innerHTML) {
+      return false;
+    }
     if ($A.childNodes.length !== $B.childNodes.length) {
       $A.innerHTML = $B.innerHTML;
-      needBind = true;
-    } else {
-      for (var i = 0, l = $B.childNodes.length; i < l; i++) {
-        $a = $A.childNodes[i];
-        $b = $B.childNodes[i];
-        if ($a.childNodes.length > 1) {
-          differ($a, $b);
-          continue;
+      return true;
+    }
+    var $a, $b, needBind = false;
+    for (var i = 0, l = $B.childNodes.length; i < l; i++) {
+      $a = $A.childNodes[i];
+      $b = $B.childNodes[i];
+      if ($a.childNodes.length > 1) {
+        differ($a, $b);
+        continue;
+      }
+      if ($a.innerHTML !== $b.innerHTML) {
+        $a.innerHTML = $b.innerHTML;
+        if ($a.querySelectorAll('[oscar-bind]').length || $a.querySelectorAll('[oscar-bind]').length) {
+          needBind = true;
         }
-        if ($a.innerHTML !== $b.innerHTML) {
-          $a.innerHTML = $b.innerHTML;
-          if ($a.querySelectorAll('[oscar-bind]').length || $a.querySelectorAll('[oscar-bind]').length) {
-            needBind = true;
-          }
-        } else {
-          if ($a.innerHTML === undefined) {
-            if ($a.textContent !== $b.textContent) {
-              $a.textContent = $b.textContent;
-            }
-          }
+      } else {
+        if ($a.innerHTML === undefined && $a.textContent !== $b.textContent) {
+            $a.textContent = $b.textContent;
         }
-        if ($a.value !== $b.value) {
-          $a.value = $b.value;
-        }
+      }
+      if ($a.value !== $b.value) {
+        $a.value = $b.value;
       }
     }
     return needBind;
