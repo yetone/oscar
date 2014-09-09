@@ -91,5 +91,24 @@
       <a class="item" oscar-action="click:mode='c'" oscar-class="{active: mode === 'c'}">CCC</a>
       <a class="item" oscar-action="click:mode='d'" oscar-class="{active: mode === 'd'}">DDD</a>
     </div>
+    <div id="model3">
+      <select oscar-bind="country">
+        <option>United States</option>
+        <option>Japan</option>
+        <option>Russia</option>
+        <option>China</option>
+        <option>Netherlands</option>
+      </select>
+    </div>
+    <div id="model4">
+      <select oscar-bind="countries" size="5" multiple="multiple">
+        <option selected="selected">United States</option>
+        <option selected="selected">Japan</option>
+        <option>Russia</option>
+        <option>China</option>
+        <option>Netherlands</option>
+      </select>
+      <input type="checkbox" oscar-bind="ok">
+    </div>
   </body>
 </html>

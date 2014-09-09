@@ -4,6 +4,35 @@
       defs = window.Object.defineProperties,
       getObjKeys = window.Object.keys,
       isArray = window.Array.isArray;
+  arrProto.has = function(obj) {
+    return this.indexOf(obj) !== -1;
+  };
+  arrProto.add = function(obj) {
+    if (!this.has(obj)) {
+      this.push(obj);
+    }
+    return this;
+  };
+  arrProto.remove = function(obj, all) {
+    var idx,
+        self = this,
+        remove = function() {
+          idx = self.indexOf(obj);
+          self.splice(idx, 1);
+        };
+    if (!self.has(obj)) {
+      return self;
+    }
+    if (all === true) {
+      while (self.has(obj)) {
+        remove();
+      }
+      return self;
+    } else {
+      remove();
+      return self;
+    }
+  };
   function toArray(obj) {
     return arrProto.slice.call(obj);
   }
@@ -127,16 +156,46 @@
           if (!bcl.hasOwnProperty(x)) continue;
           c += '[\'' + bcl[x] + '\']';
         }
-        var s = '(self.data' + c + ' = this.value)';
-        var eventType = 'input';
-        if ($b.type === 'radio') {
-          eventType = 'change';
-        }
-        if ($b.type === 'radio' && eval('(self.data' + c + ' === $b.value)')) {
-          $b.checked = true;
+        var s = '(self.data' + c + ' = value)',
+            eventType = 'input',
+            dv = eval('(self.data' + c + ')');
+        switch ($b.tagName.toLowerCase()) {
+          case 'input':
+            switch ($b.type) {
+              case 'checkbox':
+                eventType = 'change';
+                $b.checked = dv;
+                break;
+              case 'radio':
+                eventType = 'change';
+                $b.checked = (dv === $b.value);
+                break;
+            }
+            break;
+          case 'select':
+            eventType = 'change';
+            var $opts = toArray($b.options),
+                multiple = $b.hasAttribute('multiple');
+            $opts.forEach(function($opt) {
+              if (multiple) {
+                $opt.selected = eval('(self.data' + c + '.has($opt.value))');
+              } else {
+                $opt.selected = (dv === $opt.value);
+              }
+            });
+            break;
         }
         if (!needBind) return;
         $b.addEventListener(eventType, function() {
+          var value = this.value;
+          if ($b.tagName.toLowerCase() === 'select' && $b.hasAttribute('multiple')) {
+            var acc = [],
+                $opts = toArray($b.selectedOptions);
+            $opts.forEach(function($opt) {
+              acc.push($opt.value);
+            });
+            value = acc;
+          }
           eval(s);
         });
       });

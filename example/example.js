@@ -29,7 +29,14 @@ window.onload = function() {
   window.data2 = {
     mode: 'a'
   };
-  var oscar = new Oscar;
+  window.data3 = {
+    country: 'China'
+  };
+  window.data4 = {
+    countries: ['China'],
+    ok: true
+  };
+  var oscar = new Oscar();
   oscar.modelRegister({
     el: '#model0',
     data: data0
@@ -41,5 +48,13 @@ window.onload = function() {
   oscar.modelRegister({
     el: '#model2',
     data: data2
+  });
+  oscar.modelRegister({
+    el: '#model3',
+    data: data3
+  });
+  oscar.modelRegister({
+    el: '#model4',
+    data: data4
   });
 };
