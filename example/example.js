@@ -33,7 +33,7 @@ window.onload = function() {
     country: 'China'
   };
   window.data4 = {
-    countries: ['China'],
+    countries: ['China', 'Japan'],
     ok: true
   };
   var oscar = new Oscar();
