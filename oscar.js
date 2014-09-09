@@ -104,6 +104,35 @@
       cbk();
     };
     proto.render = function() {
+      function doRender($el) {
+        var $childNodes = toArray($el.childNodes),
+            attr = 'innerHTML';
+        $childNodes.forEach(function($node) {
+          switch ($node.nodeName.toLowerCase()) {
+            case '#text':
+              attr = 'textContent';
+              break;
+            case 'input':
+              switch ($node.type) {
+                case 'search':
+                case 'text':
+                  attr = 'value';
+                  break;
+                case 'checkbox':
+                case 'radio':
+                  attr = 'checked';
+                  break;
+              }
+              break;
+          }
+          if ($node.hasAttribute === undefined) {
+
+          }
+          if ($node.childNodes.length) {
+            doRender($node);
+          }
+        });
+      }
       var self = this,
           $tmp = window.document.createElement('div'),
           html = window.shani.compile(self.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(self.data),
