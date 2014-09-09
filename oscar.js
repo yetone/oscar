@@ -188,13 +188,24 @@
         if (!needBind) return;
         $b.addEventListener(eventType, function() {
           var value = this.value;
-          if ($b.tagName.toLowerCase() === 'select' && $b.hasAttribute('multiple')) {
-            var acc = [],
-                $opts = toArray($b.selectedOptions);
-            $opts.forEach(function($opt) {
-              acc.push($opt.value);
-            });
-            value = acc;
+          switch ($b.tagName.toLowerCase()) {
+            case 'select':
+              if ($b.hasAttribute('multiple')) {
+                var acc = [],
+                    $opts = toArray($b.selectedOptions);
+                $opts.forEach(function($opt) {
+                  acc.push($opt.value);
+                });
+                value = acc;
+              }
+              break;
+            case 'input':
+              switch ($b.type) {
+                case 'checkbox':
+                  value = this.checked;
+                  break;
+              }
+              break;
           }
           eval(s);
         });
