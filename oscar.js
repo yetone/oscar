@@ -305,18 +305,18 @@
         }
         if (hasIf) {
           var exp = parseExp($node.getAttribute('oscar-if')),
-              $tmp = window.document.createElement('div'),
+              $tmp = $node,
               $ps = $node.previousSibling,
               $ns = $node.nextSibling,
               $pn = $node.parentNode,
+              $cns = $node.childNodes,
               removed = false;
-          $tmp.innerHTML = $node.outerHTML;
           bindValues = self.getBindValues('{{' + exp + '}}');
           bindValues.forEach(function(path) {
             self.watch(path, function() {
               if (runWithScope(exp, self.data)) {
                 if (!removed) return;
-                var $node0 = $tmp.firstElementChild;
+                var $node0 = $tmp;
                 if ($ps && $ps.nextSibling) {
                   $pn.insertBefore($node0, $ps.nextSibling);
                 } else if ($ns) {
@@ -326,7 +326,7 @@
                 }
                 self.render($node0);
                 $node = $node0;
-                $tmp.innerHTML = $node.outerHTML;
+                $tmp = $node;
                 removed = false;
               } else {
                 $node.remove();
