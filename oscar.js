@@ -34,20 +34,30 @@
     }
   };
   function toArray(obj) {
-    try {
-      return arrProto.slice.call(obj);
-    } catch(e) {
-      console.log(e);
-    }
+    return arrProto.slice.call(obj);
   }
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
-  function genPrefix(prefix, k) {
-    if (prefix.length === 0) return k;
-    return prefix + '.' + k;
+  function genPath(base, k) {
+    function parse(str) {
+      return str.replace(/\[|\]\[/g, '.').replace(/\]$/, '');
+    }
+    if (k === undefined) return parse(base);
+    if (base.length === 0) return parse(k);
+    return parse(base) + '.' + parse(k);
+  }
+  function genS(str) {
+    var strl = str.split('.'),
+        s = '';
+    for (var x in strl) {
+      if (!strl.hasOwnProperty(x)) continue;
+      s += '[\'' + strl[x] + '\']';
+    }
+    return s;
   }
   function getEvalString(txt) {
+    if (txt.indexOf('{{') < 0) return;
     return txt.replace(/\n/g, '')
               .replace(/\{\{/g, '\' + (')
               .replace(/\}\}/g, ') + \'')
@@ -85,6 +95,55 @@
       }
     }
     return needBind;
+  }
+  function getAttr($node) {
+    var attr = 'innerHTML';
+    switch ($node.nodeName.toLowerCase()) {
+      case '#text':
+        attr = 'textContent';
+        break;
+      case 'input':
+        attr = 'value';
+        break;
+      case 'select':
+        attr = 'value';
+        break;
+    }
+    return attr;
+  }
+  function getBind($node) {
+    var bind;
+    switch ($node.nodeName.toLowerCase()) {
+      case 'input':
+        bind = 'value';
+        switch ($node.type) {
+          case 'checkbox':
+            bind = 'checked';
+            break;
+        }
+        break;
+      case 'select':
+        bind = 'value';
+        break;
+    }
+    return bind;
+  }
+  function getEventType($node) {
+    var eventType = 'input';
+    switch ($node.nodeName.toLowerCase()) {
+      case 'input':
+        switch ($node.type) {
+          case 'checkbox':
+          case 'radio':
+            eventType = 'change';
+            break;
+        }
+        break;
+      case 'select':
+        eventType = 'change';
+        break;
+    }
+    return eventType;
   }
   var Model = (function() {
     function Model(obj) {
@@ -127,10 +186,12 @@
       if (!m) return bvs;
       m.forEach(function(str) {
         str = str.substr(2, str.length - 4).trim();
-        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*/g);
+        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?/g);
         m0.forEach(function(str0) {
-          if (keys.has(str0)) {
-            bvs.add(str0);
+          var strl = str0.split(/\[|\]/);
+          if (keys.has(strl[0])) {
+            var path = str0.replace(/\[|\]\[/g, '.').replace(/\]$/, '');
+            bvs.add(path);
           }
         });
       });
@@ -139,59 +200,78 @@
     proto.render = function($el) {
       $el = $el || this.$el;
       var self = this,
-          $childNodes = toArray($el.childNodes),
-          attr = 'innerHTML',
-          es = '',
-          bind,
-          bindValues;
+          $childNodes = toArray($el.childNodes);
       $childNodes.forEach(function($node) {
         if ($node.childNodes.length) {
           self.render($node);
-          return;
         }
-        switch ($node.nodeName.toLowerCase()) {
-          case '#text':
-            attr = 'textContent';
-            break;
-          case 'input':
-            attr = 'value';
-            switch ($node.type) {
-              case 'checkbox':
-              case 'radio':
-                bind = 'checked';
-                break;
-            }
-            break;
-          case 'select':
-            attr = 'value';
-            break;
-        }
+        var attr = getAttr($node),
+            bind = getBind($node),
+            eventType = getEventType($node),
+            multiple = $node.hasAttribute && $node.hasAttribute('multiple'),
+            hasBind = $node.hasAttribute && $node.hasAttribute('oscar-bind'),
+            hasClass = $node.hasAttribute && $node.hasAttribute('oscar-class'),
+            hasAction = $node.hasAttribute && $node.hasAttribute('oscar-action'),
+            hasIf = $node.hasAttribute && $node.hasAttribute('oscar-if'),
+            hasFor = $node.hasAttribute && $node.hasAttribute('oscar-for'),
+            es = '',
+            path,
+            bindValue,
+            bindValues;
         bind = bind || attr;
-        if ($node.hasAttribute === undefined) {
-          if ($node.textContent.trim().length === 0) return;
-          bindValues = self.getBindValues($node.textContent);
-          es = getEvalString($node.textContent);
+        bindValues = self.getBindValues($node[attr]);
+        es = getEvalString($node[attr]);
+        if (es) {
           bindValues.forEach(function(bv) {
-            (function(es) {
+            (function(attr, es) {
               self.watch(bv, function() {
-                $node.textContent = runWithScope(es, self.data);
+                $node[attr] = runWithScope(es, self.data);
               });
-            })(es);
-          });
-          return;
-        }
-        if ($node.hasAttribute('oscar-bind')) {
-          es = $node.getAttribute('oscar-bind');
-          bindValues = self.getBindValues('{{' + es + '}}');
-          bindValues.forEach(function(bv) {
-            (function(bind, es) {
-              self.watch(bv, function() {
-                $node[bind] = runWithScope(es, self.data);
-              });
-            })(bind, es);
+            })(attr, es);
           });
         }
-        if ($node.hasAttribute('oscar-class')) {
+        if (hasBind && bind) {
+          bindValue = $node.getAttribute('oscar-bind');
+          path = genPath(bindValue);
+          if (multiple) {
+            self.watch(path, function() {
+              var $opts = toArray($node.options);
+              $opts.forEach(function($opt) {
+                $opt.selected = eval('(self.data' + genS(path) + '.indexOf($opt.value) >= 0)');
+              });
+            });
+            if (eventType) {
+              $node.addEventListener(eventType, function() {
+                var $selectedOpts = toArray($node.selectedOptions),
+                    acc = [],
+                    es;
+                $selectedOpts.forEach(function($opt) {
+                  if ($opt.selected) {
+                    acc.push($opt.value);
+                  }
+                });
+                es = '(self.data' + genS(path) + ' = acc)';
+                eval(es);
+              });
+            }
+          } else {
+            self.watch(path, function() {
+              $node[bind] = runWithScope(bindValue, self.data);
+            });
+            if (path !== path.split('.')[0]) {
+              self.watch(path.split('.')[0], function() {
+                $node[bind] = runWithScope(bindValue, self.data);
+              });
+            }
+            if (eventType) {
+              $node.addEventListener(eventType, function() {
+                var es = '(self.data.' + bindValue + ' = this.' + bind + ')';
+                eval(es);
+              });
+            }
+          }
+        }
+        if (hasClass) {
           var ocls = $node.getAttribute('oscar-class');
           bindValues = self.getBindValues('{{' + ocls + '}}');
           bindValues.forEach(function(bv) {
@@ -207,7 +287,7 @@
             });
           });
         }
-        if ($node.hasAttribute('oscar-action')) {
+        if (hasAction) {
           var oact = $node.getAttribute('oscar-action'),
               acl = /(\w+):(.*)/g.exec(oact);
           if (acl.length === 3) {
@@ -216,17 +296,6 @@
             });
           }
         }
-        console.log($node, attr);
-        if ($node[attr].trim().length === 0) return;
-        bindValues = self.getBindValues($node[attr]);
-        es = getEvalString($node[attr]);
-        bindValues.forEach(function(bv) {
-          (function(attr, es) {
-            self.watch(bv, function() {
-                $node[attr] = runWithScope(es, self.data);
-            });
-          })(attr, es);
-        });
       });
     };
     return Model;
@@ -239,7 +308,8 @@
     var proto = Oscar.prototype;
     proto.__init__ = function() {
     };
-    proto.buildArray = function(arr, model, k) {
+    proto.buildArray = function(arr, model, root) {
+      root = root || '';
       var self = this,
           args;
       ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
@@ -256,16 +326,16 @@
           }
           arrProto[method].apply(this, args);
           arrProto[method].apply(this.__c__, _args);
-          self.buildObj(this, model);
+          self.buildObj(this, model, root);
           if (model !== undefined) {
-            model.trigger('change:' + k);
-            //model.render();
+            model.trigger('change:' + root);
           }
         };
       });
-      self.buildObj(arr, model);
+      self.buildObj(arr, model, root);
     };
-    proto.buildObj = function(obj, model) {
+    proto.buildObj = function(obj, model, root) {
+      root = root || '';
       var self = this,
           properties = {};
       if (obj.__c__ === undefined) {
@@ -279,11 +349,12 @@
         if (k === '__c__') return;
         if (typeof obj[k] === 'function') return;
         obj.__c__[k] = obj[k];
+        var path = genPath(root, k);
         if (obj[k].constructor === window.Array) {
-          self.buildArray(obj[k], model, k);
+          self.buildArray(obj[k], model, path);
         }
         if (obj[k].constructor === window.Object) {
-          self.buildObj(obj[k], model);
+          self.buildObj(obj[k], model, path);
         }
         properties[k] = {
           get: function() {
@@ -292,20 +363,20 @@
           set: function(v) {
             switch(v.constructor) {
               case window.Array:
-                self.buildArray(v, model, k);
+                self.buildArray(v, model, path);
                 break;
               case window.Object:
-                self.buildObj(v, model);
+                self.buildObj(v, model, path);
                 break;
             }
             this.__c__[k] = v;
             if (model !== undefined) {
-              model.trigger('change:' + k);
+              model.trigger('change:' + path);
             }
           }
-        }
+        };
         if (model !== undefined) {
-          model.trigger('set:' + k);
+          model.trigger('set:' + path);
         }
       });
       defs(obj, properties);
@@ -321,10 +392,12 @@
       var $el = $els[0],
           $binds = toArray($el.querySelectorAll('[oscar-bind]')),
           model;
+      /*
       $binds.forEach(function($b) {
         var v = $b.getAttribute('oscar-bind');
         $b.getAttribute('value') || $b.setAttribute('value', '{{' + v + '}}');
       });
+      */
       model = new Model({
         $el: $el,
         tpl: $el.innerHTML,
