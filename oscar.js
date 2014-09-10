@@ -34,10 +34,25 @@
     }
   };
   function toArray(obj) {
-    return arrProto.slice.call(obj);
+    try {
+      return arrProto.slice.call(obj);
+    } catch(e) {
+      console.log(e);
+    }
   }
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
+  }
+  function genPrefix(prefix, k) {
+    if (prefix.length === 0) return k;
+    return prefix + '.' + k;
+  }
+  function getEvalString(txt) {
+    return txt.replace(/\n/g, '')
+              .replace(/\{\{/g, '\' + (')
+              .replace(/\}\}/g, ') + \'')
+              .replace(/^/g, '\'')
+              .replace(/$/g, '\'');
   }
   function differ($A, $B) {
     if ($A.innerHTML === $B.innerHTML) {
@@ -103,155 +118,116 @@
       self.on('change:' + e, cbk);
       cbk();
     };
-    proto.render = function() {
-      function doRender($el) {
-        var $childNodes = toArray($el.childNodes),
-            attr = 'innerHTML';
-        $childNodes.forEach(function($node) {
-          switch ($node.nodeName.toLowerCase()) {
-            case '#text':
-              attr = 'textContent';
-              break;
-            case 'input':
-              switch ($node.type) {
-                case 'search':
-                case 'text':
-                  attr = 'value';
-                  break;
-                case 'checkbox':
-                case 'radio':
-                  attr = 'checked';
-                  break;
-              }
-              break;
-          }
-          if ($node.hasAttribute === undefined) {
-
-          }
-          if ($node.childNodes.length) {
-            doRender($node);
-          }
-        });
-      }
+    proto.getBindValues = function(txt) {
       var self = this,
-          $tmp = window.document.createElement('div'),
-          html = window.shani.compile(self.tpl.replace(/&gt;/g, '>').replace(/&lt;/g, '<').replace(new RegExp("'", 'g'), "\\'"))(self.data),
-          needBind = false,
-          $classes,
-          $binds,
-          $actions;
-      $tmp.innerHTML = html;
-      if (!self.inited) {
-        self.$el.innerHTML = html;
-        self.$el.style.display = 'block';
-      } else {
-        needBind = differ(self.$el, $tmp);
-      }
-      needBind = needBind || !self.inited;
-      $classes = toArray(self.$el.querySelectorAll('[oscar-class]'));
-      $binds = toArray(self.$el.querySelectorAll('[oscar-bind]'));
-      $actions = toArray(self.$el.querySelectorAll('[oscar-action]'));
-      // oscar-class
-      $classes.forEach(function($c, i) {
-        var cc = $c.getAttribute('oscar-class'),
-            ccl;
-        try {
-          cc = cc.replace(new window.RegExp("'", 'g'), '"');
-          ccl = runWithScope(cc, self.data);
-        } catch(err) {
-          console.log(err);
-          return;
-        }
-        getObjKeys(ccl).forEach(function(cls) {
-          if (ccl[cls] === true) {
-            $c.classList.add(cls);
-          } else {
-            $c.classList.remove(cls);
+          m = txt.match(/\{\{.*?\}\}/g),
+          keys = getObjKeys(self.data),
+          bvs = [],
+          m0;
+      if (!m) return bvs;
+      m.forEach(function(str) {
+        str = str.substr(2, str.length - 4).trim();
+        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*/g);
+        m0.forEach(function(str0) {
+          if (keys.has(str0)) {
+            bvs.add(str0);
           }
         });
       });
-      // oscar-class end
-      // oscar-bind
-      $binds.forEach(function($b, i) {
-        var bc = $b.getAttribute('oscar-bind'),
-            c = '',
-            bcl;
-        bc = bc.replace(/(\[|\])/g, '.');
-        if (bc.lastIndexOf('.') === bc.length - 1) {
-          bc = bc.substr(0, bc.length - 1);
+      return bvs;
+    };
+    proto.render = function($el) {
+      $el = $el || this.$el;
+      var self = this,
+          $childNodes = toArray($el.childNodes),
+          attr = 'innerHTML',
+          es = '',
+          bind,
+          bindValues;
+      $childNodes.forEach(function($node) {
+        if ($node.childNodes.length) {
+          self.render($node);
+          return;
         }
-        bcl = bc.split('.');
-        for (var x in bcl) {
-          if (!bcl.hasOwnProperty(x)) continue;
-          c += '[\'' + bcl[x] + '\']';
-        }
-        var s = '(self.data' + c + ' = value)',
-            eventType = 'input',
-            dv = eval('(self.data' + c + ')');
-        switch ($b.tagName.toLowerCase()) {
+        switch ($node.nodeName.toLowerCase()) {
+          case '#text':
+            attr = 'textContent';
+            break;
           case 'input':
-            switch ($b.type) {
+            attr = 'value';
+            switch ($node.type) {
               case 'checkbox':
-                eventType = 'change';
-                $b.checked = dv;
-                break;
               case 'radio':
-                eventType = 'change';
-                $b.checked = (dv === $b.value);
+                bind = 'checked';
                 break;
             }
             break;
           case 'select':
-            eventType = 'change';
-            var $opts = toArray($b.options),
-                multiple = $b.hasAttribute('multiple');
-            $opts.forEach(function($opt) {
-              if (multiple) {
-                $opt.selected = eval('(self.data' + c + '.has($opt.value))');
-              } else {
-                $opt.selected = (dv === $opt.value);
-              }
-            });
+            attr = 'value';
             break;
         }
-        if (!needBind) return;
-        $b.addEventListener(eventType, function() {
-          var value = this.value;
-          switch ($b.tagName.toLowerCase()) {
-            case 'select':
-              if ($b.hasAttribute('multiple')) {
-                var acc = [],
-                    $opts = toArray($b.selectedOptions);
-                $opts.forEach(function($opt) {
-                  acc.push($opt.value);
-                });
-                value = acc;
-              }
-              break;
-            case 'input':
-              switch ($b.type) {
-                case 'checkbox':
-                  value = this.checked;
-                  break;
-              }
-              break;
+        bind = bind || attr;
+        if ($node.hasAttribute === undefined) {
+          if ($node.textContent.trim().length === 0) return;
+          bindValues = self.getBindValues($node.textContent);
+          es = getEvalString($node.textContent);
+          bindValues.forEach(function(bv) {
+            (function(es) {
+              self.watch(bv, function() {
+                $node.textContent = runWithScope(es, self.data);
+              });
+            })(es);
+          });
+          return;
+        }
+        if ($node.hasAttribute('oscar-bind')) {
+          es = $node.getAttribute('oscar-bind');
+          bindValues = self.getBindValues('{{' + es + '}}');
+          bindValues.forEach(function(bv) {
+            (function(bind, es) {
+              self.watch(bv, function() {
+                $node[bind] = runWithScope(es, self.data);
+              });
+            })(bind, es);
+          });
+        }
+        if ($node.hasAttribute('oscar-class')) {
+          var ocls = $node.getAttribute('oscar-class');
+          bindValues = self.getBindValues('{{' + ocls + '}}');
+          bindValues.forEach(function(bv) {
+            self.watch(bv, function() {
+              var classObj = runWithScope('(' + ocls + ')', self.data);
+              getObjKeys(classObj).forEach(function(cls) {
+                if (classObj[cls] === true) {
+                  $node.classList.add(cls);
+                } else {
+                  $node.classList.remove(cls);
+                }
+              });
+            });
+          });
+        }
+        if ($node.hasAttribute('oscar-action')) {
+          var oact = $node.getAttribute('oscar-action'),
+              acl = /(\w+):(.*)/g.exec(oact);
+          if (acl.length === 3) {
+            $node.addEventListener(acl[1], function() {
+              runWithScope(acl[2], self.data);
+            });
           }
-          eval(s);
+        }
+        console.log($node, attr);
+        if ($node[attr].trim().length === 0) return;
+        bindValues = self.getBindValues($node[attr]);
+        es = getEvalString($node[attr]);
+        bindValues.forEach(function(bv) {
+          (function(attr, es) {
+            self.watch(bv, function() {
+                $node[attr] = runWithScope(es, self.data);
+            });
+          })(attr, es);
         });
       });
-      // oscar-bind end
-      // oscar-action
-      if (!needBind) return;
-      $actions.forEach(function($a, i) {
-        var ac = $a.getAttribute('oscar-action'),
-            acl = /(\w+):(.*)/g.exec(ac);
-        if (acl.length !== 3) return;
-        $a.addEventListener(acl[1], function() {
-          runWithScope(acl[2], self.data);
-        });
-      });
-      // oscar-action end
-      self.inited = true;
     };
     return Model;
   })();
@@ -263,7 +239,7 @@
     var proto = Oscar.prototype;
     proto.__init__ = function() {
     };
-    proto.buildArray = function(arr, model) {
+    proto.buildArray = function(arr, model, k) {
       var self = this,
           args;
       ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
@@ -282,7 +258,8 @@
           arrProto[method].apply(this.__c__, _args);
           self.buildObj(this, model);
           if (model !== undefined) {
-            model.render();
+            model.trigger('change:' + k);
+            //model.render();
           }
         };
       });
@@ -303,7 +280,7 @@
         if (typeof obj[k] === 'function') return;
         obj.__c__[k] = obj[k];
         if (obj[k].constructor === window.Array) {
-          self.buildArray(obj[k], model);
+          self.buildArray(obj[k], model, k);
         }
         if (obj[k].constructor === window.Object) {
           self.buildObj(obj[k], model);
@@ -315,7 +292,7 @@
           set: function(v) {
             switch(v.constructor) {
               case window.Array:
-                self.buildArray(v, model);
+                self.buildArray(v, model, k);
                 break;
               case window.Object:
                 self.buildObj(v, model);
@@ -324,7 +301,6 @@
             this.__c__[k] = v;
             if (model !== undefined) {
               model.trigger('change:' + k);
-              model.render();
             }
           }
         }
