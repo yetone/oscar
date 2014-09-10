@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <title>example</title>
+    <script src="shani.js"></script>
+    <script src="../oscar.js"></script>
+    <script src="example0.js"></script>
+    <style>
+      #model2, .item {
+        color: #333;
+        padding: 10px;
+        margin: 10px;
+        cursor: pointer;
+      }
+      #model2 .item.active {
+        color: #fff;
+        background-color: #888;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="model0">
+      <div>My name is {{ name }}.</div>
+      <div>My age is {{ age }}.</div>
+      <div>Next year, my age is {{ age + 1 }}.</div>
+      <input type="button" oscar-action="click:age++" value="increase age: {{ age }}.">
+      <input type="button" oscar-action="click:age--" value="decrease age: {{ age }}.">
+      <div>My skills are:</div>
+      <div>
+        {{ say() }}
+      </div>
+    </div>
+    <div id="model1">
+      <div>My name is {{ name }}.</div>
+      <div>My age is {{ age + 1 }}.</div>
+      <input type="text" oscar-bind="skills[0]">
+      <input type="text" oscar-bind="skills[1]">
+      <div>My skills are:</div>
+    </div>
+    <div id="model2">
+      <a class="item" oscar-action="click:mode='a'" oscar-class="{active: mode === 'a', other: mode === 'c'}">AAA</a>
+      <a class="item" oscar-action="click:mode='b'" oscar-class="{active: mode === 'b'}">BBB</a>
+      <a class="item" oscar-action="click:mode='c'" oscar-class="{active: mode === 'c'}">CCC</a>
+      <a class="item" oscar-action="click:mode='d'" oscar-class="{active: mode === 'd'}">DDD</a>
+    </div>
+    <div id="model3">
+      <select oscar-bind="country">
+        <option>United States</option>
+        <option>Japan</option>
+        <option>Russia</option>
+        <option>China</option>
+        <option>Netherlands</option>
+      </select>
+    </div>
+    <div id="model4">
+      <select oscar-bind="countries" size="5" multiple="multiple">
+        <option selected="selected">United States</option>
+        <option selected="selected">Japan</option>
+        <option>Russia</option>
+        <option>China</option>
+        <option>Netherlands</option>
+      </select>
+      <div>
+        <input type="checkbox" oscar-bind="ok">
+        {{ ok }}
+      </div>
+    </div>
+  </body>
+</html>
