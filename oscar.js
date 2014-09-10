@@ -64,6 +64,10 @@
               .replace(/^/g, '\'')
               .replace(/$/g, '\'');
   }
+  function parseExp(exp) {
+    return exp.replace(/\sand\s/g, ' && ')
+              .replace(/\sor\s/g, ' || ');
+  }
   function differ($A, $B) {
     if ($A.innerHTML === $B.innerHTML) {
       return false;
@@ -191,6 +195,9 @@
           var strl = str0.split(/\[|\]/);
           if (keys.has(strl[0])) {
             var path = str0.replace(/\[|\]\[/g, '.').replace(/\]$/, '');
+            if (path !== path.split('.')[0]) {
+              bvs.add(path.split('.')[0]);
+            }
             bvs.add(path);
           }
         });
@@ -295,6 +302,38 @@
               runWithScope(acl[2], self.data);
             });
           }
+        }
+        if (hasIf) {
+          var exp = parseExp($node.getAttribute('oscar-if')),
+              $tmp = window.document.createElement('div'),
+              $ps = $node.previousSibling,
+              $ns = $node.nextSibling,
+              $pn = $node.parentNode,
+              removed = false;
+          $tmp.innerHTML = $node.outerHTML;
+          bindValues = self.getBindValues('{{' + exp + '}}');
+          bindValues.forEach(function(path) {
+            self.watch(path, function() {
+              if (runWithScope(exp, self.data)) {
+                if (!removed) return;
+                var $node0 = $tmp.firstElementChild;
+                if ($ps && $ps.nextSibling) {
+                  $pn.insertBefore($node0, $ps.nextSibling);
+                } else if ($ns) {
+                  $pn.insertBefore($node0, $ns);
+                } else if ($pn) {
+                  $pn.appendChild($node0);
+                }
+                self.render($node0);
+                $node = $node0;
+                $tmp.innerHTML = $node.outerHTML;
+                removed = false;
+              } else {
+                $node.remove();
+                removed = true;
+              }
+            });
+          });
         }
       });
     };

@@ -25,6 +25,9 @@
       <input type="button" oscar-action="click:age++" value="increase age: {{ age }}.">
       <input type="button" oscar-action="click:age--" value="decrease age: {{ age }}.">
       <div>My skills are:</div>
+      <div oscar-if="age<0" style="color:red">
+        AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}
+      </div>
       <div>
         {{ say() }}
       </div>
