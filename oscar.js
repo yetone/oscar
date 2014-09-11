@@ -33,6 +33,9 @@
       return self;
     }
   };
+  function isObj(obj) {
+    return obj.constructor === window.Object;
+  }
   function toArray(obj) {
     return arrProto.slice.call(obj);
   }
@@ -41,7 +44,7 @@
   }
   function genPath(base, k) {
     function parse(str) {
-      return str.replace(/\[|\]\[/g, '.').replace(/\]$/, '');
+      return str.replace(/\[|\]\[/g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
     }
     if (k === undefined) return parse(base);
     if (base.length === 0) return parse(k);
@@ -149,20 +152,21 @@
       self.on('change:' + e, cbk);
       cbk();
     };
-    proto.getBindValues = function(txt) {
+    proto.getBindValues = function(txt, scope, debug) {
+      scope = scope || self.data;
       var self = this,
           m = txt.match(/\{\{.*?\}\}/g),
-          keys = getObjKeys(self.data),
+          keys = getObjKeys(scope),
           bvs = [],
           m0;
       if (!m) return bvs;
       m.forEach(function(str) {
         str = str.substr(2, str.length - 4).trim();
-        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[[0-9]+\])?/g);
+        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[['"]?[0-9a-zA-Z]+['"]?\])?/g);
         m0.forEach(function(str0) {
           var strl = str0.split(/\[|\]/);
           if (keys.has(strl[0])) {
-            var path = str0.replace(/\[|\]\[/g, '.').replace(/\]$/, '');
+            var path = str0.replace(/\[|\]\[/g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
             if (path !== path.split('.')[0]) {
               bvs.add(path.split('.')[0]);
             }
@@ -172,8 +176,9 @@
       });
       return bvs;
     };
-    proto.render = function($el) {
+    proto.render = function($el, scope, debug) {
       $el = $el || this.$el;
+      scope = scope || this.data;
       var self = this,
           $childNodes = toArray($el.childNodes);
       $childNodes.forEach(function($node) {
@@ -194,15 +199,13 @@
             bindValue,
             bindValues;
         bind = bind || attr;
-        bindValues = self.getBindValues($node[attr]);
+        bindValues = self.getBindValues($node[attr], scope, debug);
         es = getEvalString($node[attr]);
         if (es) {
           bindValues.forEach(function(bv) {
-            (function(attr, es) {
-              self.watch(bv, function() {
-                $node[attr] = runWithScope(es, self.data);
-              });
-            })(attr, es);
+            self.watch(bv, function() {
+              $node[attr] = runWithScope(es, scope);
+            });
           });
         }
         if (hasBind && bind) {
@@ -212,7 +215,7 @@
             self.watch(path, function() {
               var $opts = toArray($node.options);
               $opts.forEach(function($opt) {
-                $opt.selected = eval('(self.data' + genS(path) + '.indexOf($opt.value) >= 0)');
+                $opt.selected = eval('(scope' + genS(path) + '.indexOf($opt.value) >= 0)');
               });
             });
             if (eventType) {
@@ -225,22 +228,22 @@
                     acc.push($opt.value);
                   }
                 });
-                es = '(self.data' + genS(path) + ' = acc)';
+                es = '(scope' + genS(path) + ' = acc)';
                 eval(es);
               });
             }
           } else {
             self.watch(path, function() {
-              $node[bind] = runWithScope(bindValue, self.data);
+              $node[bind] = runWithScope(bindValue, scope);
             });
             if (path !== path.split('.')[0]) {
               self.watch(path.split('.')[0], function() {
-                $node[bind] = runWithScope(bindValue, self.data);
+                $node[bind] = runWithScope(bindValue, scope);
               });
             }
             if (eventType) {
               $node.addEventListener(eventType, function() {
-                var es = '(self.data.' + bindValue + ' = this.' + bind + ')';
+                var es = '(scope.' + bindValue + ' = this.' + bind + ')';
                 eval(es);
               });
             }
@@ -248,10 +251,10 @@
         }
         if (hasClass) {
           var ocls = $node.getAttribute('oscar-class');
-          bindValues = self.getBindValues('{{' + ocls + '}}');
+          bindValues = self.getBindValues('{{' + ocls + '}}', scope);
           bindValues.forEach(function(bv) {
             self.watch(bv, function() {
-              var classObj = runWithScope('(' + ocls + ')', self.data);
+              var classObj = runWithScope('(' + ocls + ')', scope);
               getObjKeys(classObj).forEach(function(cls) {
                 if (classObj[cls] === true) {
                   $node.classList.add(cls);
@@ -267,7 +270,7 @@
               acl = /(\w+):(.*)/g.exec(oact);
           if (acl.length === 3) {
             $node.addEventListener(acl[1], function() {
-              runWithScope(acl[2], self.data);
+              runWithScope(acl[2], scope);
             });
           }
         }
@@ -279,10 +282,10 @@
               $pn = $node.parentNode,
               $cns = $node.childNodes,
               removed = false;
-          bindValues = self.getBindValues('{{' + exp + '}}');
+          bindValues = self.getBindValues('{{' + exp + '}}', scope);
           bindValues.forEach(function(path) {
             self.watch(path, function() {
-              if (runWithScope(exp, self.data)) {
+              if (runWithScope(exp, scope)) {
                 if (!removed) return;
                 var $node0 = $tmp;
                 if ($ps && $ps.nextSibling) {
@@ -302,6 +305,48 @@
               }
             });
           });
+        }
+        if (hasFor) {
+          var exp = $node.getAttribute('oscar-for'),
+              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+              $tmp = $node,
+              $ps = $node.previousSibling,
+              $ns = $node.nextSibling,
+              $pn = $node.parentNode,
+              $cns = $node.childNodes,
+              removed = false;
+          if (expl && expl.length === 3 && (bindValues = self.getBindValues('{{' + expl[2] + '}}', scope), bindValues.length > 0)) {
+            var dv = eval('(scope' + genS(expl[2]) + ')'),
+                obj = dv;
+            if (isObj(dv)) {
+              obj = getObjKeys(dv);
+            }
+            $node.remove();
+            obj.forEach(function(v, k) {
+              if (isObj(dv) && v === '__c__') return;
+              var $node0 = $tmp.cloneNode(true);
+                  re = new RegExp('\\{\\{\\s+' + expl[1] + '\\s+\\}\\}', 'g');
+              if (isArray(dv)) {
+                $node0.innerHTML = $node0.innerHTML.replace(re, '{{' + expl[2] + '[\'' + k + '\']}}')
+                                                    .replace(/\{\{\s+\$index\s+\}\}/g, k);
+              } else if (isObj(dv)) {
+                $node0.innerHTML = $node0.innerHTML.replace(re, '{{' + expl[2] + '[\'' + v + '\']}}')
+                                                    .replace(/\{\{\s+\$key\s+\}\}/g, v);
+              }
+              if ($ns) {
+                $pn.insertBefore($node0, $ns);
+              } else if ($ps && $ps.nextSibling) {
+                $pn.insertBefore($node0, $ps.nextSibling);
+              } else if ($pn) {
+                $pn.appendChild($node0);
+              }
+              $ps = $node0.previousSibling,
+              $ns = $node0.nextSibling,
+              $pn = $node0.parentNode,
+              $cns = $node0.childNodes,
+              self.render($node0, null, true);
+            });
+          }
         }
       });
     };

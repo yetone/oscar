@@ -23,7 +23,16 @@
       <div>Next year, my age is {{ age + 1 }}.</div>
       <input type="button" oscar-action="click:age++" value="increase age: {{ age }}.">
       <input type="button" oscar-action="click:age--" value="decrease age: {{ age }}.">
+      <input type="text" oscar-bind="skills[1]">
       <div>My skills are:</div>
+      <ul>
+        <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
+      </ul>
+      <input type="text" oscar-bind="dict[3]">
+      <div>Dict:</div>
+      <ul>
+        <li oscar-for="v in dict">{{ $key }}: {{ v }}</li>
+      </ul>
       <div oscar-if="age<10" style="color:red">
         AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}
       </div>
@@ -37,6 +46,9 @@
       <input type="text" oscar-bind="skills[0]">
       <input type="text" oscar-bind="skills[1]">
       <div>My skills are:</div>
+      <ul>
+        <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
+      </ul>
     </div>
     <div id="model2">
       <a class="item" oscar-action="click:mode='a'" oscar-class="{active: mode === 'a', other: mode === 'c'}">AAA</a>
