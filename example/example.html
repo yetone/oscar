@@ -1,13 +1,9 @@
 <html>
   <head>
     <title>example</title>
-    <script src="shani.js"></script>
     <script src="../oscar.js"></script>
     <script src="example.js"></script>
     <style>
-      #model0, #model1 {
-        display: none;
-      }
       #model2, .item {
         color: #333;
         padding: 10px;
@@ -27,51 +23,22 @@
       <div>Next year, my age is {{ age + 1 }}.</div>
       <input type="button" oscar-action="click:age++" value="increase age: {{ age }}.">
       <input type="button" oscar-action="click:age--" value="decrease age: {{ age }}.">
+      <input type="text" oscar-bind="skills[1]">
       <div>My skills are:</div>
       <ul>
-        {% for _, skill in skills %}
-        <li>{{ skill + "!" }}</li>
-        {% end %}
+        <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
       </ul>
-      {% if age > 0 %}
-      I am here!!!!!!!
-      {% end %}
-      {% if age < 0 %}
-      <div style="color:red;">
-      I am here!!!!!!!
-      </div>
-      {% end %}
-      <div> I am 
-        <span style="color:red;">
-        {% if age > 70 %}
-        an old superman.
-        {% else if age > 50 %}
-        a superman.
-        {% else if age > 30 %}
-        an old man.
-        {% else if age > 18 %}
-        an adult.
-        {% else if age < 6 %}
-        a child.
-        {% else %}
-        a young.
-        {% end %}
-        </span>
+      <input type="text" oscar-bind="dict[3]">
+      <div>Dict:</div>
+      <ul>
+        <li oscar-for="v in dict">{{ $key }}: {{ v }}</li>
+      </ul>
+      <div oscar-if="age<10" style="color:red">
+        AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}
       </div>
       <div>
         {{ say() }}
       </div>
-      <ul>
-        {% for k, v in dict %}
-        <li>{{ k }}: {{ v }}</li>
-        {% end %}
-      </ul>
-      {% if 2 > 1 and 3 > 2 %}
-      <p>hey!</p>
-      {% end %}
-      {% if 1 > 2 or 3 > 2 %}
-      <p>ha!</p>
-      {% end %}
     </div>
     <div id="model1">
       <div>My name is {{ name }}.</div>
@@ -80,9 +47,7 @@
       <input type="text" oscar-bind="skills[1]">
       <div>My skills are:</div>
       <ul>
-        {% for _, skill in skills %}
-        <li>{{ skill + "!" }}</li>
-        {% end %}
+        <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
       </ul>
     </div>
     <div id="model2">

@@ -1,13 +1,11 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <script src="../shani.js"></script>
     <script src="../../oscar.js"></script>
     <script src="app.js"></script>
     <style>
         #demo {
           font-family: 'Helvetica', Arial, sans-serif;
-          display: none;
         }
         a {
           text-decoration: none;
@@ -39,22 +37,17 @@
         <br>
         <input type="radio" id="development" name="branch" oscar-bind="branch" value="development">
         <label for="development">development</label>
-        {% if loading %}
-          <div>
-            loading...
-          </div>
-        {% else %}
-          <ul>
-            {% for _, c in commits %}
-              <li>
-                  <a href="{{c.html_url}}" target="_blank" class="commit">{{c.sha.slice(0, 7)}}</a>
-                  - <span class="message">{{truncate(c.commit.message)}}</span><br>
-                  by <img class="avatar" src="{{c.author.avatar_url}}"><a class="author" href="{{c.author.html_url}}" target="_blank">{{c.commit.author.name}}</a>
-                  at <span class="date">{{formatDate(c.commit.author.date)}}</span>
-              </li>
-            {% end %}
-          </ul>
-        {% end %}
+        <div oscar-if="loading">
+          loading...
+        </div>
+        <ul oscar-if="!loading">
+            <li oscar-for="c in commits">
+                <a href="{{c.html_url}}" target="_blank" class="commit">{{c.sha.slice(0, 7)}}</a>
+                - <span class="message">{{truncate(c.commit.message)}}</span><br>
+                by <img class="avatar" src="{{c.author.avatar_url}}"><a class="author" href="{{c.author.html_url}}" target="_blank">{{c.commit.author.name}}</a>
+                at <span class="date">{{formatDate(c.commit.author.date)}}</span>
+            </li>
+        </ul>
     </div>
   </body>
 </html>

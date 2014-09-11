@@ -37,23 +37,23 @@ window.onload = function() {
     ok: true
   };
   var oscar = new Oscar();
-  oscar.modelRegister({
+  window.md0 = oscar.modelRegister({
     el: '#model0',
     data: data0
   });
-  oscar.modelRegister({
+  window.md1 = oscar.modelRegister({
     el: '#model1',
     data: data1
   });
-  oscar.modelRegister({
+  window.md2 = oscar.modelRegister({
     el: '#model2',
     data: data2
   });
-  oscar.modelRegister({
+  window.md3 = oscar.modelRegister({
     el: '#model3',
     data: data3
   });
-  oscar.modelRegister({
+  window.md4 = oscar.modelRegister({
     el: '#model4',
     data: data4
   });
