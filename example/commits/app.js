@@ -13,7 +13,7 @@ window.onload = function() {
     };
 
     var oscar = new Oscar();
-    var model = oscar.modelRegister({
+    window.model = oscar.modelRegister({
       el: '#demo',
       data: data
     });

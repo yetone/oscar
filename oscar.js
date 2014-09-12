@@ -48,6 +48,9 @@
   function isObj(obj) {
     return obj.constructor === window.Object;
   }
+  function isFunction(obj) {
+    return obj.constructor === window.Function;
+  }
   function toArray(obj) {
     return arrProto.slice.call(obj);
   }
@@ -168,6 +171,7 @@
       case 'input':
         bind = 'value';
         switch ($node.type) {
+          case 'radio':
           case 'checkbox':
             bind = 'checked';
             break;
@@ -210,14 +214,14 @@
       if (self.eventObj[e] === undefined) {
         self.eventObj[e] = [];
       }
-      self.eventObj[e].push(cbk);
+      isFunction(cbk) && self.eventObj[e].push(cbk);
     };
     proto.trigger = function(e) {
       var self = this;
       getObjKeys(self.eventObj).forEach(function(k) {
         if (k === e) {
           self.eventObj[k].forEach(function(cbk) {
-            cbk.call(self);
+            cbk && cbk.call(self);
           });
         }
       });
@@ -229,7 +233,7 @@
       cbk();
     };
     proto.getBindValues = function(txt, scope) {
-      scope = scope || self.data;
+      scope = scope || this.data;
       var self = this,
           m = txt.match(/\{\{.*?\}\}/g),
           keys = getObjKeys(scope),
@@ -253,7 +257,7 @@
       });
       return bvs;
     };
-    proto.render = function($el, scope, force) {
+    proto.render = function($el, scope) {
       $el = $el || this.$el;
       scope = scope || this.data;
       var self = this,
@@ -268,8 +272,8 @@
             hasAction = $node.hasAttribute && $node.hasAttribute('oscar-action'),
             hasIf = $node.hasAttribute && $node.hasAttribute('oscar-if'),
             hasFor = $node.hasAttribute && $node.hasAttribute('oscar-for'),
-            underIf = underAttribute($node, 'oscar-if'),
-            underFor = underAttribute($node, 'oscar-for'),
+            //underIf = underAttribute($node, 'oscar-if'),
+            //underFor = underAttribute($node, 'oscar-for'),
             es = '',
             path,
             bindValue,
@@ -286,7 +290,7 @@
               try {
                 $node[attr] = runWithScope(es, scope);
               } catch(e) {
-                return;
+                console.log(e);
               }
             });
           });
@@ -317,7 +321,11 @@
             }
           } else {
             self.watch(path, function() {
-              $node[bind] = runWithScope(bindValue, scope);
+              if ($node.type === 'radio') {
+                $node[bind] = eval('(scope' + genS(path) + ' === $node.value)');
+              } else {
+                $node[bind] = runWithScope(bindValue, scope);
+              }
             });
             if (path !== path.split('.')[0]) {
               self.watch(path.split('.')[0], function() {
@@ -326,7 +334,12 @@
             }
             if (eventType) {
               $node.addEventListener(eventType, function() {
-                var es = '(scope.' + bindValue + ' = this.' + bind + ')';
+                var es;
+                if ($node.type === 'radio') {
+                  es = '(scope.' + bindValue + ' = this.value)';
+                } else {
+                  es = '(scope.' + bindValue + ' = this.' + bind + ')';
+                }
                 eval(es);
               });
             }
@@ -391,18 +404,17 @@
         }
         if (hasFor) {
           var exp = $node.getAttribute('oscar-for'),
-              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-              $tmp = $node,
-              $ps = $node.previousSibling,
-              $ns = $node.nextSibling,
-              $pn = $node.parentNode,
-              $cns = $node.childNodes,
-              removed = false;
+              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp);
           if (expl && expl.length === 3) {
             bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
-            bindValues.forEach(function(bv) {
-              self.watch(bv, function() {
-                var dv = eval('(scope' + genS(expl[2]) + ')'),
+            if (!self.inited) {
+              function render() {
+                var $tmp = $node,
+                    $ps = $node.previousSibling,
+                    $ns = $node.nextSibling,
+                    $pn = $node.parentNode,
+                    $cns = $node.childNodes,
+                    dv = eval('(scope' + genS(expl[2]) + ')'),
                     obj = dv;
                 if (isObj(dv)) {
                   obj = getObjKeys(dv);
@@ -432,14 +444,26 @@
                   } else if ($pn) {
                     $pn.appendChild($node0);
                   }
-                  $ps = $node0.previousSibling,
-                  $ns = $node0.nextSibling,
-                  $pn = $node0.parentNode,
-                  $cns = $node0.childNodes,
-                  self.render($node0, null, true);
+                  $ps = $node0.previousSibling;
+                  $ns = $node0.nextSibling;
+                  $pn = $node0.parentNode;
+                  $cns = $node0.childNodes;
+                  //self.render($node0, null, true);
+                  var html = $node0.innerHTML;
+                  var bindValues = self.getBindValues(html);
+                  bindValues.forEach(function(bv) {
+                    self.watch(bv, function() {
+                      $node0.innerHTML = runWithScope(getEvalString(html), self.data);
+                    });
+                  });
                 });
-              });
-            });
+              }
+              if (bindValues.length === 1) {
+                self.watch(bindValues[0], function() {
+                  render();
+                });
+              }
+            }
           }
         }
       });
@@ -545,6 +569,7 @@
       this.buildObj(model.data, model);
       this.modelList.push(model);
       model.render();
+      model.inited = true;
       return model;
     };
     proto.watcher = function() {
