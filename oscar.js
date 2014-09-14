@@ -222,7 +222,7 @@
     proto.trigger = function(e) {
       var self = this,
           handlerArgs = window.Array.prototype.slice(arguments, 1);
-      if (e in self.evnetHandlerObj) {
+      if (e in self.eventHandlerObj) {
         self.eventHandlerObj[e].forEach(function(cbk) {
           cbk && cbk.apply(self, handlerArgs);
         });
