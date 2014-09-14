@@ -209,15 +209,26 @@
       this.eventHandlerObj = {};
     }
     var proto = Model.prototype;
-    proto.on = function(e, cbk) {
+    proto.on = function(eventType, cbk) {
       if (!isFunction(cbk)) {
         throw new Error('eventHandler must be a function');
       }
       var self = this;
-      if (self.eventHandlerObj[e] === undefined) {
-        self.eventHandlerObj[e] = [];
+      if (!(eventType in self.eventHandlerObj)) {
+        self.eventHandlerObj[eventType] = [];
       }
-      self.eventHandlerObj[e].push(cbk);
+      self.eventHandlerObj[eventType].push(cbk);
+      return self;
+    };
+    proto.off = function(eventType, fun) {
+      var self = this;
+      if (!(eventType in self.eventHandlerObj)) {
+        return self;
+      }
+      self.eventHandlerObj[eventType] = self.eventHandlerObj[eventType].filter(function(item) {
+        return item !== fun;
+      });
+      return self;
     };
     proto.trigger = function(e) {
       var self = this,
@@ -227,6 +238,7 @@
           cbk && cbk.apply(self, handlerArgs);
         });
       }
+      return self;
     };
     proto.watch = function(e, cbk) {
       var self = this;
@@ -450,21 +462,34 @@
                   $ns = $node0.nextSibling;
                   $pn = $node0.parentNode;
                   $cns = $node0.childNodes;
-                  //self.render($node0, null, true);
                   var html = $node0.innerHTML;
-                  var bindValues = self.getBindValues(html);
-                  bindValues.forEach(function(bv) {
+                  var _bindValues = self.getBindValues(html);
+                  _bindValues.forEach(function(bv) {
                     self.watch(bv, function() {
                       $node0.innerHTML = runWithScope(getEvalString(html), self.data);
                     });
                   });
+                  bindValues.forEach(function(bv) {
+                    self.watch(bv, function() {
+                      var dv = eval('(scope' + genS(expl[2]) + ')'),
+                          hasMe;
+                      if (isObj(dv)) {
+                        hasMe = v in dv;
+                      } else {
+                        hasMe = k in dv;
+                      }
+                      if (!hasMe) {
+                        $node0.remove();
+                      }
+                    });
+                  });
                 });
               }
-              if (bindValues.length === 1) {
-                self.watch(bindValues[0], function() {
+              bindValues.forEach(function(bv) {
+                self.watch(bv, function() {
                   render();
                 });
-              }
+              });
             }
           }
         }
