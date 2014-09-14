@@ -206,25 +206,27 @@
       this.tpl = obj.tpl;
       this.data = obj.data;
       this.inited = obj.inited || false;
-      this.eventObj = {};
+      this.eventHandlerObj = {};
     }
     var proto = Model.prototype;
     proto.on = function(e, cbk) {
-      var self = this;
-      if (self.eventObj[e] === undefined) {
-        self.eventObj[e] = [];
+      if (!isFunction(cbk)) {
+        throw new Error('eventHandler must be a function');
       }
-      isFunction(cbk) && self.eventObj[e].push(cbk);
+      var self = this;
+      if (self.eventHandlerObj[e] === undefined) {
+        self.eventHandlerObj[e] = [];
+      }
+      self.eventHandlerObj[e].push(cbk);
     };
     proto.trigger = function(e) {
-      var self = this;
-      getObjKeys(self.eventObj).forEach(function(k) {
-        if (k === e) {
-          self.eventObj[k].forEach(function(cbk) {
-            cbk && cbk.call(self);
-          });
-        }
-      });
+      var self = this,
+          handlerArgs = window.Array.prototype.slice(arguments, 1);
+      if (e in self.evnetHandlerObj) {
+        self.eventHandlerObj[e].forEach(function(cbk) {
+          cbk && cbk.apply(self, handlerArgs);
+        });
+      }
     };
     proto.watch = function(e, cbk) {
       var self = this;
