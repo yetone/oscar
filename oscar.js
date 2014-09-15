@@ -51,6 +51,9 @@
   function isFunction(obj) {
     return obj.constructor === window.Function;
   }
+  function isStr(obj) {
+    return obj.constructor === window.String;
+  }
   function toArray(obj) {
     return arrProto.slice.call(obj);
   }
@@ -417,18 +420,19 @@
           });
         }
         if (hasFor) {
-          var exp = $node.getAttribute('oscar-for'),
-              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp);
+          var $tmp = $node,
+              $ps = $node.previousSibling,
+              $ns = $node.nextSibling,
+              $pn = $node.parentNode,
+              $cns = $node.childNodes,
+              exp = $node.getAttribute('oscar-for'),
+              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+              acc = [];
           if (expl && expl.length === 3) {
             bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
             if (!self.inited) {
               function render() {
-                var $tmp = $node,
-                    $ps = $node.previousSibling,
-                    $ns = $node.nextSibling,
-                    $pn = $node.parentNode,
-                    $cns = $node.childNodes,
-                    dv = eval('(scope' + genS(expl[2]) + ')'),
+                var dv = eval('(scope' + genS(expl[2]) + ')'),
                     obj = dv;
                 if (isObj(dv)) {
                   obj = getObjKeys(dv);
@@ -436,37 +440,51 @@
                 $node.remove();
                 obj.forEach(function(v, k) {
                   if (isObj(dv) && v === '__c__') return;
-                  var $node0 = $tmp.cloneNode(true),
-                      re = /\{\{(.*?)\}\}/g;
-                  if (isArray(dv)) {
-                    $node0.innerHTML = $node0.innerHTML.replace(re, function(_, a) {
-                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + k + '\']');
-                      a = replaceEvalStr(a, '$index', k);
+                  var $node,
+                      tpl,
+                      _bindValues,
+                      re = /\{\{(.*?)\}\}/g,
+                      idx = k,
+                      kstr = '$index';
+                  if (isObj(dv)) {
+                    idx = v;
+                    kstr = '$key';
+                  }
+                  if (acc[idx]) {
+                    $node = acc[idx]['$node'];
+                    tpl = acc[idx]['tpl'];
+                  } else {
+                    $node = $tmp.cloneNode(true);
+                    tpl = $node.innerHTML.replace(re, function(_, a) {
+                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                      if (isStr) {
+                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                      } else {
+                        a = replaceEvalStr(a, kstr, idx);
+                      }
                       return '{{' + a + '}}';
                     });
-                  } else if (isObj(dv)) {
-                    $node0.innerHTML = $node0.innerHTML.replace(re, function(_, a) {
-                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + v + '\']');
-                      a = replaceEvalStr(a, '$key', '\'' + v + '\'');
-                      return '{{' + a + '}}';
+                    acc.push({
+                      $node: $node,
+                      tpl: tpl
                     });
                   }
+                  if (window.document.contains($node)) return;
                   if ($ns) {
-                    $pn.insertBefore($node0, $ns);
+                    $pn.insertBefore($node, $ns);
                   } else if ($ps && $ps.nextSibling) {
-                    $pn.insertBefore($node0, $ps.nextSibling);
+                    $pn.insertBefore($node, $ps.nextSibling);
                   } else if ($pn) {
-                    $pn.appendChild($node0);
+                    $pn.appendChild($node);
                   }
-                  $ps = $node0.previousSibling;
-                  $ns = $node0.nextSibling;
-                  $pn = $node0.parentNode;
-                  $cns = $node0.childNodes;
-                  var html = $node0.innerHTML;
-                  var _bindValues = self.getBindValues(html);
+                  $ps = $node.previousSibling;
+                  $ns = $node.nextSibling;
+                  $pn = $node.parentNode;
+                  $cns = $node.childNodes;
+                  _bindValues = self.getBindValues(tpl);
                   _bindValues.forEach(function(bv) {
                     self.watch(bv, function() {
-                      $node0.innerHTML = runWithScope(getEvalString(html), self.data);
+                      $node.innerHTML = runWithScope(getEvalString(tpl), self.data);
                     });
                   });
                   bindValues.forEach(function(bv) {
@@ -479,7 +497,7 @@
                         hasMe = k in dv;
                       }
                       if (!hasMe) {
-                        $node0.remove();
+                        $node.remove();
                       }
                     });
                   });
