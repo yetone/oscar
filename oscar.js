@@ -566,8 +566,9 @@
                 self.buildObj(v, model, path);
                 break;
             }
+            var isNew = (this.__c__[k] !== v);
             this.__c__[k] = v;
-            if (model !== undefined) {
+            if (model !== undefined && isNew) {
               model.trigger('change:' + path);
             }
           }
