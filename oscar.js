@@ -295,7 +295,7 @@
             path,
             bindValue,
             bindValues;
-        if ($node.childNodes.length) {
+        if ($node.hasChildNodes()) {
           self.render($node);
         }
         bind = bind || attr;
