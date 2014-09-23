@@ -73,6 +73,9 @@
     }
     return obj;
   }
+  function getWindow() {
+    return (new Function('return this;'))();
+  }
   function parseEvalStr(txt, vlst) {
     var acc = [],
         obj = {},
@@ -675,4 +678,4 @@
     };
     return Oscar;
   })();
-})(window);
+})((new Function('return this;'))());
