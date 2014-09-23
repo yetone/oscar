@@ -1,6 +1,7 @@
 ;(function(window, undefined) {
   var arrProto = window.Array.prototype,
       strProto = window.String.prototype,
+      objProto = window.Object.prototype,
       def = window.Object.defineProperty,
       defs = window.Object.defineProperties,
       getObjKeys = window.Object.keys,
@@ -37,6 +38,11 @@
   strProto.splice = function(start, length, replacement) {
     return this.substr(0, start) + replacement + this.substr(start + length);
   };
+  objProto.extend = function(obj) {
+    for (var k in obj) {
+      this[k] = obj[k];
+    }
+  };
   function underAttribute($node, attr) {
     if ($node.parentElement.hasAttribute(attr)) return true;
     if ($node.tagName === 'BODY') {
@@ -56,6 +62,16 @@
   }
   function toArray(obj) {
     return arrProto.slice.call(obj);
+  }
+  function extend(a, b) {
+    var obj = {};
+    for (var k in a) {
+      obj[k] = a[k];
+    }
+    for (var k in b) {
+      obj[k] = a[k];
+    }
+    return obj;
   }
   function parseEvalStr(txt, vlst) {
     var acc = [],
@@ -268,14 +284,9 @@
       });
       return bvs;
     };
-    proto.render = function($el, scope, extScope, pathMap, debug) {
+    proto.render = function($el, scope) {
       $el = $el || this.$el;
       scope = scope || this.data;
-      extScope = extScope || {};
-      pathMap = pathMap || {};
-      for (var k in extScope) {
-        scope[k] = extScope[k];
-      }
       var self = this,
           $childNodes = toArray($el.childNodes);
       function _bind(obj, attr) {
@@ -283,7 +294,6 @@
             es = getEvalString(obj[attr]);
         if (es) {
           bindValues.forEach(function(path) {
-            path = pathMap[path] || path;
             self.watch(path, function() {
               try {
                 obj[attr] = runWithScope(es, scope);
@@ -321,7 +331,6 @@
         if (hasBind && bind) {
           bindValue = $node.getAttribute('oscar-bind');
           path = genPath(bindValue);
-          path = pathMap[path] || path;
           if (multiple) {
             self.watch(path, function() {
               var $opts = toArray($node.options);
@@ -373,7 +382,6 @@
           var ocls = $node.getAttribute('oscar-class');
           bindValues = self.getBindValues('{{' + ocls + '}}', scope);
           bindValues.forEach(function(path) {
-            path = pathMap[path] || path;
             self.watch(path, function() {
               var classObj = runWithScope('(' + ocls + ')', scope);
               getObjKeys(classObj).forEach(function(cls) {
@@ -405,7 +413,6 @@
               removed = false;
           bindValues = self.getBindValues('{{' + exp + '}}', scope);
           bindValues.forEach(function(path) {
-            path = pathMap[path] || path;
             self.watch(path, function() {
               if (runWithScope(exp, scope)) {
                 if (!removed) return;
@@ -525,13 +532,11 @@
                   });
                   _bindValues = self.getBindValues($node.innerHTML);
                   _bindValues.forEach(function(path) {
-                    path = pathMap[path] || path;
                     self.watch(path, function() {
                       self.render($node);
                     });
                   });
                   bindValues.forEach(function(path) {
-                    path = pathMap[path] || path;
                     self.watch(path, function() {
                       var dv = eval('(scope' + genS(expl[2]) + ')'),
                           hasMe;
