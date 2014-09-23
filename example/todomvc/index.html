@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Todo</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" type="text/css" href="bower_components/todomvc-common/base.css">
+    <style> .hidden { display: none; } </style>
+  </head>
+  <body>
+    <section id="todoapp">
+      <header id="header">
+        <h1>todos</h1>
+        <input id="new-todo" autofocus autocomplete="off" placeholder="What needs to be done?">
+      </header>
+      <section id="main">
+        <input id="toggle-all" type="checkbox" oscar-action="click: allDone()">
+        <ul id="todo-list">
+          <li class="todo" oscar-for="todo in filterTodos" oscar-class="{completed: todo.completed, editing: todo.editing}">
+            <div class="view">
+              <input class="toggle" type="checkbox" oscar-bind="todo.completed">
+              <label oscar-action="dblclick: editTodo($index)">{{ todo.title }}</label>
+              <button class="destroy" oscar-action="click: removeTodo($index)"></button>
+            </div>
+            <input class="edit" type="text" >
+          </li>
+        </ul>
+      </section>
+      <footer id="footer">
+        <span id="todo-count">
+          <strong>{{ remaining }}</strong> {{ pluralize('item', remaining) }} left
+        </span>
+        <ul id="filters">
+          <li><a href="#/all" oscar-action="click: filter = 'all'" oscar-class="{selected: filter === 'all'}">All</a></li>
+          <li><a href="#/active" oscar-action="click: filter = 'active'" oscar-class="{selected: filter === 'active'}">Active</a></li>
+          <li><a href="#/completed" oscar-action="click: filter = 'completed'" oscar-class="{selected: filter === 'completed'}">Completed</a></li>
+        </ul>
+        <button id="clear-completed" oscar-action="click: removeCompleted()" oscar-class="{hidden: todos.length <= remaining}">
+          Clear completed ({{todos.length - remaining}})
+        </button>
+      </footer>
+    </section>
+    <footer id="info">
+      <p>Double-click to edit a todo</p>
+      <p>Powered by <a href="https://github.com/yetone/oscar">oscar.js</a></p>
+      <p>Created by yetone</p>
+    </footer>
+
+    <script src="../../oscar.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
