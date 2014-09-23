@@ -33,7 +33,7 @@
       <ul>
         <li oscar-for="v in dict" class="{{v}}">{{ $key }}: {{ v }}</li>
       </ul>
-      <div oscar-if="age<10" style="color:red">
+      <div oscar-if="age<10 and name === 'yetone'" style="color:red">
         AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}
       </div>
       <div>
