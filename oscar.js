@@ -2,10 +2,64 @@
   var arrProto = window.Array.prototype,
       strProto = window.String.prototype,
       objProto = window.Object.prototype,
+      eventProto = window.Event.prototype,
+      elProto = window.Element.prototype,
       def = window.Object.defineProperty,
       defs = window.Object.defineProperties,
       getObjKeys = window.Object.keys,
       isArray = window.Array.isArray;
+  // 补丁，为了某些浏览器
+  (function() {
+    if (!elProto.addEventListener) {
+      elProto.addEventListener = function(type, listener) {
+        var self = this,
+            wrapper = function(e) {
+              e.target = e.srcElement;
+              e.currentTarget = self;
+              if (listener.handleEvent) {
+                listener.handleEvent(e);
+              } else {
+                listener.call(self, e);
+              }
+            };
+        self.attachEvent('on' + type, wrapper);
+      };
+      elProto.removeEventListener = function(type, listener) {
+        this.detachEvent('on' + type, listener);
+      }
+    }
+    if (!def) {
+      def = function(obj, prop, desc) {
+        if ('__defineGetter__' in obj) {
+          if ('value' in desc) {
+            obj[prop] = desc.value;
+          }
+          if ('get' in desc) {
+            obj.__defineGetter__(prop, desc.get);
+          }
+          if ('set' in desc) {
+            obj.__defineSetter__(prop, desc.set);
+          }
+          return obj;
+        }
+      };
+      defs = function(obj, descs) {
+        for (var prop in descs) {
+          if (!descs.hasOwnProperty(prop)) continue;
+          def(obj, prop, descs[prop]);
+        }
+      };
+    }
+    if (!isArray) {
+      isArray = function(obj) {
+        try {
+          return typeof obj === 'object' && toArray(obj).length === obj.length;
+        } catch(e) {
+          return false;
+        }
+      };
+    }
+  })();
   arrProto.has = function(obj) {
     return this.indexOf(obj) !== -1;
   };
@@ -52,13 +106,25 @@
     }
   }
   function isObj(obj) {
-    return obj && obj.constructor === window.Object;
+    try {
+      return obj && obj.constructor === window.Object;
+    } catch(e) {
+      return typeof obj === 'object' && !isArray(obj);
+    }
   }
   function isFunction(obj) {
-    return obj && obj.constructor === window.Function;
+    try {
+      return obj && obj.constructor === window.Function;
+    } catch(e) {
+      return typeof obj === 'function';
+    }
   }
   function isStr(obj) {
-    return obj && obj.constructor === window.String;
+    try {
+      return obj && obj.constructor === window.String;
+    } catch(e) {
+      return typeof obj === 'string';
+    }
   }
   function toArray(obj) {
     return arrProto.slice.call(obj);
@@ -76,7 +142,7 @@
   function getWindow() {
     return (new Function('return this;'))();
   }
-  function parseEvalStr(txt, vlst) {
+  function parseEvalStr(txt) {
     var acc = [],
         obj = {},
         dquoteCount = 0,
@@ -616,10 +682,10 @@
         if (typeof obj[k] === 'function') return;
         obj.__c__[k] = obj[k];
         var path = genPath(root, k);
-        if (obj[k].constructor === window.Array) {
+        if (isArray(obj[k])) {
           self.buildArray(obj[k], model, path);
         }
-        if (obj[k].constructor === window.Object) {
+        if (isObj(obj[k])) {
           self.buildObj(obj[k], model, path);
         }
         properties[k] = {
@@ -627,13 +693,11 @@
             return this.__c__[k];
           },
           set: function(v) {
-            switch(v.constructor) {
-              case window.Array:
-                self.buildArray(v, model, path);
-                break;
-              case window.Object:
-                self.buildObj(v, model, path);
-                break;
+            if (isArray(v)) {
+              self.buildArray(v, model, path);
+            }
+            if (isObj(v)) {
+              self.buildObj(v, model, path);
             }
             var isNew = (this.__c__[k] !== v);
             this.__c__[k] = v;
