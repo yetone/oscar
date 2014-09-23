@@ -647,6 +647,7 @@
       ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
         arr[method] = function() {
           args = toArray(arguments);
+          // clone arguments
           _args = toArray(arguments);
           if (method === 'splice') {
             var subArgs = args.slice(2);
