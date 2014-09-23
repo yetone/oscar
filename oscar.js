@@ -412,7 +412,6 @@
               $ps = $node.previousSibling,
               $ns = $node.nextSibling,
               $pn = $node.parentNode,
-              $cns = $node.childNodes,
               removed = false;
           bindValues = self.getBindValues('{{' + exp + '}}', scope);
           bindValues.forEach(function(path) {
