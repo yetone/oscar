@@ -46,16 +46,13 @@
     }
   }
   function isObj(obj) {
-    if (obj === undefined || obj === null) return false;
-    return obj.constructor === window.Object;
+    return obj && obj.constructor === window.Object;
   }
   function isFunction(obj) {
-    if (obj === undefined || obj === null) return false;
-    return obj.constructor === window.Function;
+    return obj && obj.constructor === window.Function;
   }
   function isStr(obj) {
-    if (obj === undefined || obj === null) return false;
-    return obj.constructor === window.String;
+    return obj && obj.constructor === window.String;
   }
   function toArray(obj) {
     return arrProto.slice.call(obj);
@@ -164,19 +161,6 @@
   function parseExp(exp) {
     return exp.replace(/\sand\s/g, ' && ')
               .replace(/\sor\s/g, ' || ');
-  }
-  function getAttr($node) {
-    var attr = 'innerHTML';
-    switch ($node.nodeName.toLowerCase()) {
-      case '#text':
-        attr = 'textContent';
-        break;
-      case 'input':
-      case 'select':
-        attr = 'value';
-        break;
-    }
-    return attr;
   }
   function getBind($node) {
     var bind;
