@@ -31,7 +31,7 @@
       <input type="text" oscar-bind="dict[3]">
       <div>Dict:</div>
       <ul>
-        <li oscar-for="v in dict" class="{{v}}">{{ $key }}: {{ v }}</li>
+        <li oscar-for="v in dict" oscar-class="{wow: v === 'wow'}">{{ $key }}: {{ v }}</li>
       </ul>
       <div oscar-if="age<10 and name === 'yetone'" style="color:red">
         AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}

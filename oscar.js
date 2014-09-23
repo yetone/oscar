@@ -353,11 +353,13 @@
       });
       return bvs;
     };
-    proto.render = function($el, scope) {
-      $el = $el || this.$el;
+    proto.render = function($node, scope, debug) {
+      $node = $node || this.$el;
       scope = scope || this.data;
       var self = this,
-          $childNodes = toArray($el.childNodes);
+          $childNodes = toArray($node.childNodes),
+          bind, eventType, multiple, hasBind, hasClass, hasAction, hasIf, hasFor, path,
+          bindValue, bindValues, attrs;
       function _bind(obj, attr) {
         var bindValues = self.getBindValues(obj[attr], scope),
             es = getEvalString(obj[attr]);
@@ -373,262 +375,255 @@
           });
         }
       }
-      $childNodes.forEach(function($node) {
-        if ($node.hasChildNodes()) {
-          self.render($node);
-        }
-        var bind, eventType, multiple, hasBind, hasClass, hasAction, hasIf, hasFor, path,
-            bindValue, bindValues, attrs;
-        if ($node.nodeType === 3) {
-          return _bind($node, 'textContent');
-        }
-        bind = getBind($node);
-        eventType = getEventType($node);
-        multiple = $node.hasAttribute('multiple');
-        hasBind = $node.hasAttribute('oscar-bind');
-        hasClass = $node.hasAttribute('oscar-class');
-        hasAction = $node.hasAttribute('oscar-action');
-        hasIf = $node.hasAttribute('oscar-if');
-        hasFor = $node.hasAttribute('oscar-for');
-        attrs = toArray($node.attributes);
-        attrs = attrs.filter(function(v) {
-          return v.name.indexOf('oscar-') !== 0;
-        });
-        attrs.forEach(function(v) {
-          _bind(v, 'value');
-        });
-        if (hasBind && bind) {
-          bindValue = $node.getAttribute('oscar-bind');
-          path = genPath(bindValue);
-          if (multiple) {
-            self.watch(path, function() {
-              var $opts = toArray($node.options);
-              $opts.forEach(function($opt) {
-                $opt.selected = eval('(scope' + genS(path) + '.indexOf($opt.value) >= 0)');
-              });
-            });
-            if (eventType) {
-              $node.addEventListener(eventType, function() {
-                var $selectedOpts = toArray($node.selectedOptions),
-                    acc = [],
-                    es;
-                $selectedOpts.forEach(function($opt) {
-                  if ($opt.selected) {
-                    acc.push($opt.value);
-                  }
-                });
-                es = '(scope' + genS(path) + ' = acc)';
-                eval(es);
-              });
-            }
-          } else {
-            self.watch(path, function() {
-              if ($node.type === 'radio') {
-                $node[bind] = eval('(scope' + genS(path) + ' === $node.value)');
-              } else {
-                $node[bind] = runWithScope(bindValue, scope);
-              }
-            });
-            if (path !== path.split('.')[0]) {
-              self.watch(path.split('.')[0], function() {
-                $node[bind] = runWithScope(bindValue, scope);
-              });
-            }
-            if (eventType) {
-              $node.addEventListener(eventType, function() {
-                var es;
-                if ($node.type === 'radio') {
-                  es = '(scope.' + bindValue + ' = this.value)';
-                } else {
-                  es = '(scope.' + bindValue + ' = this.' + bind + ')';
-                }
-                eval(es);
-              });
-            }
-          }
-        }
-        if (hasClass) {
-          var ocls = $node.getAttribute('oscar-class');
-          bindValues = self.getBindValues('{{' + ocls + '}}', scope);
-          bindValues.forEach(function(path) {
-            self.watch(path, function() {
-              var classObj = runWithScope('(' + ocls + ')', scope);
-              getObjKeys(classObj).forEach(function(cls) {
-                if (classObj[cls] === true) {
-                  $node.classList.add(cls);
-                } else {
-                  $node.classList.remove(cls);
-                }
-              });
-            });
-          });
-        }
-        if (hasAction) {
-          var oact = $node.getAttribute('oscar-action'),
-              acl = /(\w+):(.*)/g.exec(oact);
-          if (acl.length === 3) {
-            $node.addEventListener(acl[1], function() {
-              runWithScope(acl[2], scope);
-            });
-          }
-        }
-        if (hasIf) {
-          var exp = parseExp($node.getAttribute('oscar-if')),
-              $tmp = $node,
-              $ps = $node.previousSibling,
-              $ns = $node.nextSibling,
-              $pn = $node.parentNode,
-              removed = false;
-          bindValues = self.getBindValues('{{' + exp + '}}', scope);
-          bindValues.forEach(function(path) {
-            self.watch(path, function() {
-              if (runWithScope(exp, scope)) {
-                if (!removed) return;
-                var $node0 = $tmp;
-                if ($ps && $ps.nextSibling) {
-                  $pn.insertBefore($node0, $ps.nextSibling);
-                } else if ($ns) {
-                  $pn.insertBefore($node0, $ns);
-                } else if ($pn) {
-                  $pn.appendChild($node0);
-                }
-                self.render($node0, null, true);
-                $node = $node0;
-                $tmp = $node;
-                removed = false;
-              } else {
-                $node.remove();
-                removed = true;
-              }
-            });
-          });
-        }
-        if (hasFor) {
-          var $tmp = $node,
-              $ps = $node.previousSibling,
-              $ns = $node.nextSibling,
-              $pn = $node.parentNode,
-              $cns = $node.childNodes,
-              exp = $node.getAttribute('oscar-for'),
-              expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-              acc = [];
-          if (expl && expl.length === 3) {
-            bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
-            if (!self.inited) {
-              function render() {
-                var dv = eval('(scope' + genS(expl[2]) + ')'),
-                    obj = dv;
-                if (isObj(dv)) {
-                  obj = getObjKeys(dv);
-                }
-                $node.remove();
-                obj.forEach(function(v, k) {
-                  if (isObj(dv) && v === '__c__') return;
-                  var $node,
-                      _bindValues,
-                      re = /\{\{(.*?)\}\}/g,
-                      idx = k,
-                      kstr = '$index';
-                  if (isObj(dv)) {
-                    idx = v;
-                    kstr = '$key';
-                  }
-                  if (acc[idx]) {
-                    $node = acc[idx]['$node'];
-                  } else {
-                    $node = $tmp.cloneNode(true);
-                    // 起名什么的最讨厌了！
-                    (function __($node) {
-                      if ($node.nodeType === 3) {
-                        $node.textContent = $node.textContent.replace(re, function(_, a) {
-                          a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                          a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                          return '{{' + a + '}}';
-                        });
-                        return;
-                      }
-                      var oscarAttrs = ['bind', 'action', 'class', 'if'],
-                          attrs = toArray($node.attributes),
-                          preffix = 'oscar-',
-                          $cns = toArray($node.childNodes);
-                      oscarAttrs.forEach(function(_attr) {
-                        var attr = preffix + _attr,
-                            a;
-                        if ($node.hasAttribute(attr)) {
-                          a = $node.getAttribute(attr);
-                          a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                          a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                          $node.setAttribute(attr, a);
-                        }
-                      });
-                      attrs = attrs.filter(function(v) {
-                        return v.name.indexOf('oscar-') !== 0;
-                      });
-                      attrs.forEach(function(v) {
-                        v.value = v.value.replace(re, function(_, a) {
-                          a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                          a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                          return '{{' + a + '}}';
-                        });
-                      });
-                      $cns.forEach(function($n) {
-                        __($n);
-                      });
-                    })($node);
-                    acc.push({
-                      $node: $node
-                    });
-                  }
-
-                  if (window.document.contains($node)) return;
-                  if ($ns) {
-                    $pn.insertBefore($node, $ns);
-                  } else if ($ps && $ps.nextSibling) {
-                    $pn.insertBefore($node, $ps.nextSibling);
-                  } else if ($pn) {
-                    $pn.appendChild($node);
-                  }
-                  $ps = $node.previousSibling;
-                  $ns = $node.nextSibling;
-                  $pn = $node.parentNode;
-                  $cns = $node.childNodes;
-                  var attrs = toArray($node.attributes).filter(function(v) {
-                    return v.name.indexOf('oscar-') !== 0;
-                  });
-                  attrs.forEach(function(v) {
-                    _bind(v, 'value');
-                  });
-                  _bindValues = self.getBindValues($node.innerHTML);
-                  _bindValues.forEach(function(path) {
-                    self.watch(path, function() {
-                      self.render($node);
-                    });
-                  });
-                  bindValues.forEach(function(path) {
-                    self.watch(path, function() {
-                      var dv = eval('(scope' + genS(expl[2]) + ')'),
-                          hasMe;
-                      if (isObj(dv)) {
-                        hasMe = v in dv;
-                      } else {
-                        hasMe = k in dv;
-                      }
-                      if (!hasMe) {
-                        $node.remove();
-                      }
-                    });
-                  });
-                });
-              }
-              bindValues.forEach(function(bv) {
-                self.watch(bv, function() {
-                  render();
-                });
-              });
-            }
-          }
-        }
+      if ($node.nodeType === 3) {
+        return _bind($node, 'textContent');
+      }
+      bind = getBind($node);
+      eventType = getEventType($node);
+      multiple = $node.hasAttribute('multiple');
+      hasBind = $node.hasAttribute('oscar-bind');
+      hasClass = $node.hasAttribute('oscar-class');
+      hasAction = $node.hasAttribute('oscar-action');
+      hasIf = $node.hasAttribute('oscar-if');
+      hasFor = $node.hasAttribute('oscar-for');
+      attrs = toArray($node.attributes);
+      attrs = attrs.filter(function(v) {
+        return v.name.indexOf('oscar-') !== 0;
       });
+      attrs.forEach(function(v) {
+        _bind(v, 'value');
+      });
+      if (hasBind && bind) {
+        bindValue = $node.getAttribute('oscar-bind');
+        path = genPath(bindValue);
+        if (multiple) {
+          self.watch(path, function() {
+            var $opts = toArray($node.options);
+            $opts.forEach(function($opt) {
+              $opt.selected = eval('(scope' + genS(path) + '.indexOf($opt.value) >= 0)');
+            });
+          });
+          if (eventType) {
+            $node.addEventListener(eventType, function() {
+              var $selectedOpts = toArray($node.selectedOptions),
+                acc = [],
+                es;
+              $selectedOpts.forEach(function($opt) {
+                if ($opt.selected) {
+                  acc.push($opt.value);
+                }
+              });
+              es = '(scope' + genS(path) + ' = acc)';
+              eval(es);
+            });
+          }
+        } else {
+          self.watch(path, function() {
+            if ($node.type === 'radio') {
+              $node[bind] = eval('(scope' + genS(path) + ' === $node.value)');
+            } else {
+              $node[bind] = runWithScope(bindValue, scope);
+            }
+          });
+          if (path !== path.split('.')[0]) {
+            self.watch(path.split('.')[0], function() {
+              $node[bind] = runWithScope(bindValue, scope);
+            });
+          }
+          if (eventType) {
+            $node.addEventListener(eventType, function() {
+              var es;
+              if ($node.type === 'radio') {
+                es = '(scope.' + bindValue + ' = this.value)';
+              } else {
+                es = '(scope.' + bindValue + ' = this.' + bind + ')';
+              }
+              eval(es);
+            });
+          }
+        }
+      }
+      if (hasClass) {
+        var ocls = $node.getAttribute('oscar-class');
+        bindValues = self.getBindValues('{{' + ocls + '}}', scope);
+        bindValues.forEach(function(path) {
+          self.watch(path, function() {
+            var classObj = runWithScope('(' + ocls + ')', scope);
+            getObjKeys(classObj).forEach(function(cls) {
+              if (classObj[cls] === true) {
+                $node.classList.add(cls);
+              } else {
+                $node.classList.remove(cls);
+              }
+            });
+          });
+        });
+      }
+      if (hasAction) {
+        var oact = $node.getAttribute('oscar-action'),
+          acl = /(\w+):(.*)/g.exec(oact);
+        if (acl.length === 3) {
+          $node.addEventListener(acl[1], function() {
+            runWithScope(acl[2], scope);
+          });
+        }
+      }
+      if (hasIf) {
+        var exp = parseExp($node.getAttribute('oscar-if')),
+            $tmp = $node,
+            $ps = $node.previousSibling,
+            $ns = $node.nextSibling,
+            $pn = $node.parentNode,
+            removed = false;
+        bindValues = self.getBindValues('{{' + exp + '}}', scope);
+        bindValues.forEach(function(path) {
+          self.watch(path, function() {
+            if (runWithScope(exp, scope)) {
+              if (!removed) return;
+              var $node0 = $tmp;
+              if ($ps && $ps.nextSibling) {
+                $pn.insertBefore($node0, $ps.nextSibling);
+              } else if ($ns) {
+                $pn.insertBefore($node0, $ns);
+              } else if ($pn) {
+                $pn.appendChild($node0);
+              }
+              self.render($node0, null, true);
+              $node = $node0;
+              $tmp = $node;
+              removed = false;
+            } else {
+              $node.remove();
+              removed = true;
+            }
+          });
+        });
+      }
+      if (hasFor) {
+        var $tmp = $node,
+            $ps = $node.previousSibling,
+            $ns = $node.nextSibling,
+            $pn = $node.parentNode,
+            $cns = $node.childNodes,
+            exp = $node.getAttribute('oscar-for'),
+            expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+            acc = [];
+        if (expl && expl.length === 3) {
+          bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
+          if (!$node.inited) {
+            function render() {
+              var dv = eval('(scope' + genS(expl[2]) + ')'),
+                obj = dv;
+              if (isObj(dv)) {
+                obj = getObjKeys(dv);
+              }
+              $node.remove();
+              obj.forEach(function(v, k) {
+                if (isObj(dv) && v === '__c__') return;
+                var $node,
+                    re = /\{\{(.*?)\}\}/g,
+                    idx = k,
+                    kstr = '$index';
+                if (isObj(dv)) {
+                  idx = v;
+                  kstr = '$key';
+                }
+                if (acc[idx]) {
+                  $node = acc[idx]['$node'];
+                } else {
+                  $node = $tmp.cloneNode(true);
+                  // 起名什么的最讨厌了！
+                  (function __($node) {
+                    if ($node.nodeType === 3) {
+                      $node.textContent = $node.textContent.replace(re, function(_, a) {
+                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                        return '{{' + a + '}}';
+                      });
+                      return;
+                    }
+                    var oscarAttrs = ['bind', 'action', 'class', 'if'],
+                      attrs = toArray($node.attributes),
+                      preffix = 'oscar-',
+                      $cns = toArray($node.childNodes);
+                    oscarAttrs.forEach(function(_attr) {
+                      var attr = preffix + _attr,
+                        a;
+                      if ($node.hasAttribute(attr)) {
+                        a = $node.getAttribute(attr);
+                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                        $node.setAttribute(attr, a);
+                      }
+                    });
+                    attrs = attrs.filter(function(v) {
+                      return v.name.indexOf('oscar-') !== 0;
+                    });
+                    attrs.forEach(function(v) {
+                      v.value = v.value.replace(re, function(_, a) {
+                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                        return '{{' + a + '}}';
+                      });
+                    });
+                    $cns.forEach(function($n) {
+                      __($n);
+                    });
+                  })($node);
+                  acc.push({
+                    $node: $node
+                  });
+                }
+
+                if (window.document.contains($node)) return;
+                if ($ns) {
+                  $pn.insertBefore($node, $ns);
+                } else if ($ps && $ps.nextSibling) {
+                  $pn.insertBefore($node, $ps.nextSibling);
+                } else if ($pn) {
+                  $pn.appendChild($node);
+                }
+                $ps = $node.previousSibling;
+                $ns = $node.nextSibling;
+                $pn = $node.parentNode;
+                $cns = $node.childNodes;
+                var attrs = toArray($node.attributes).filter(function(v) {
+                  return v.name.indexOf('oscar-') !== 0;
+                });
+                attrs.forEach(function(v) {
+                  _bind(v, 'value');
+                });
+                bindValues.forEach(function(path) {
+                  self.watch(path, function() {
+                    var dv = eval('(scope' + genS(expl[2]) + ')'),
+                      hasMe;
+                    if (isObj(dv)) {
+                      hasMe = v in dv;
+                    } else {
+                      hasMe = k in dv;
+                    }
+                    if (!hasMe) {
+                      $node.remove();
+                    }
+                  });
+                });
+                $node.inited = true;
+                self.render($node);
+              });
+            }
+            bindValues.forEach(function(bv) {
+              self.watch(bv, function() {
+                render();
+              });
+            });
+          }
+        }
+      }
+      if (window.document.contains($node)) {
+        toArray($node.childNodes).forEach(function($node) {
+          self.render($node);
+        });
+      }
     };
     return Model;
   })();
