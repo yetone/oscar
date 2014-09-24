@@ -15,7 +15,7 @@
       <section id="main">
         <input id="toggle-all" type="checkbox" oscar-action="click: allDone()">
         <ul id="todo-list">
-          <li class="todo" oscar-for="todo in filterTodos" oscar-class="{completed: todo.completed, editing: todo.editing, hidden: todo.removed || todo.hide}">
+          <li class="todo" oscar-for="todo in todos" oscar-class="{completed: todo.completed, editing: todo.editing, hidden: todo.removed || todo.hide}">
             <div class="view">
               <input class="toggle" type="checkbox" oscar-bind="todo.completed">
               <label oscar-action="dblclick: editTodo(todo)">{{ todo.title }}</label>
@@ -34,8 +34,8 @@
           <li><a href="#/active" oscar-action="click: filter = 'active'" oscar-class="{selected: filter === 'active'}">Active</a></li>
           <li><a href="#/completed" oscar-action="click: filter = 'completed'" oscar-class="{selected: filter === 'completed'}">Completed</a></li>
         </ul>
-        <button id="clear-completed" oscar-action="click: removeCompleted()" oscar-class="{hidden: todos.length <= remaining}">
-          Clear completed ({{todos.length - remaining}})
+        <button id="clear-completed" oscar-action="click: removeCompleted()" oscar-class="{hidden: completedCount <= 0}">
+          Clear completed ({{ completedCount }})
         </button>
       </footer>
     </section>

@@ -813,7 +813,7 @@
       root = root || '';
       var self = this,
           properties = {};
-      if (obj.__c__ === undefined) {
+      if (obj.__c__ === undefined || obj.__c__.constructor !== Store) {
         obj.__c__ = new Store();
       }
       getObjKeys(obj).forEach(function(k) {
@@ -842,6 +842,9 @@
             this.__c__.set(k, v);
             if (model !== undefined && isNew) {
               model.trigger('change:' + path);
+              if (path.split('.')[0] !== path) {
+                model.trigger('change:' + path.split('.')[0]);
+              }
             }
           }
         };
