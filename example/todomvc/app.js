@@ -5,19 +5,19 @@ function onLoad() {
     filter: 'all',
     remaining: 0,
     pluralize: function(txt, count) {
-      if (count > 1) {return txt + 's'};
+      if (count > 1) return txt + 's';
       return txt;
     },
     editedTodo: null,
-    editTodo: function(index) {
-      data.filterTodos[index].editing = true;
+    editTodo: function(todo) {
+      todo.editing = true;
     },
-    removeTodo: function(index) {
-      data.filterTodos.splice(index, 1);
+    removeTodo: function(todo) {
+      todo.removed = true
     },
     allDone: function() {
       data.filterTodos.forEach(function(d) {
-        d.completed = true;
+        d.completed = !d.completed;
       });
     }
   };
@@ -27,10 +27,11 @@ function onLoad() {
       var todo = {
         title: title,
         completed: false,
-        editing: false
+        editing: false,
+        removed: false
       };
       data.todos.push(todo);
-      data.filterTodos.push(todo);
+      this.value = '';
     }
   });
   var oscar = new Oscar();
@@ -38,6 +39,27 @@ function onLoad() {
     el: '#todoapp',
     data: data
   });
+  function filter() {
+    switch (data.filter) {
+      case 'all':
+        data.filterTodos = data.todos;
+        break;
+      case 'active':
+        data.filterTodos = data.todos.filter(function(v) {
+          return !v.completed;
+        });
+        break;
+      case 'completed':
+        data.filterTodos = data.todos.filter(function(v) {
+          return v.completed;
+        });
+        break;
+    }
+  }
+  model.watch('todos', function() {
+    data.filterTodos = data.todos;
+  });
+  model.watch('filter', filter);
   model.watch('filterTodos', function() {
     data.remaining = data.filterTodos.length;
   });

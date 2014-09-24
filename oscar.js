@@ -220,7 +220,7 @@
   }
   function genPath(base, k) {
     function parse(str) {
-      return str.replace(/\[|\]\[/g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
+      return str.replace(/\[['"]/g, '[').replace(/['"]\]/g, ']').replace(/\[|\]\[|\]\./g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
     }
     if (k === undefined) return parse(base);
     if (base.length === 0) return parse(k);
@@ -338,12 +338,12 @@
       if (!m) return bvs;
       m.forEach(function(str) {
         str = str.substr(2, str.length - 4).trim();
-        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[['"]?[0-9a-zA-Z]+['"]?\])?/g);
+        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[['"]?[0-9a-zA-Z_]+['"]?\])?(\.[0-9a-zA-Z_]+)?/g);
         if (!m0) return;
         m0.forEach(function(str0) {
           var strl = str0.split(/\[|\]/);
           if (keys.has(strl[0])) {
-            var path = str0.replace(/\[|\]\[/g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
+            var path = genPath(str0);
             if (path !== path.split('.')[0]) {
               bvs.add(path.split('.')[0]);
             }
