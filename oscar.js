@@ -5,6 +5,7 @@
       eventProto = window.Event.prototype,
       elProto = window.Element.prototype,
       hasProp = ({}).hasOwnProperty,
+      forEach = arrProto.forEach,
       def = window.Object.defineProperty,
       defs = window.Object.defineProperties,
       getObjKeys = window.Object.keys,
@@ -130,6 +131,14 @@
   function toArray(obj) {
     return arrProto.slice.call(obj);
   }
+  function range(s, e, d) {
+    d = d || 1;
+    var acc = [];
+    for (; s < e; s += d) {
+      acc.push(s);
+    }
+    return acc;
+  }
   function extend(a, b) {
     var obj = {};
     for (var k in a) {
@@ -231,6 +240,11 @@
   function runWithScope(code, scope) {
     return (new Function('with(this) {return (' + code + ');}')).call(scope);
   }
+  function runWithEvent(code, scope, target, event) {
+    scope.$this = target;
+    scope.$event = event;
+    return (new Function('scope', 'with(scope) {return (' + code + ');}')).call(this, scope);
+  }
   function genPath(base, k) {
     function parse(str) {
       return str.replace(/\[['"]/g, '[').replace(/['"]\]/g, ']').replace(/\[|\]\[|\]\./g, '.').replace(/'\.'|'\.|\.'/g, '.').replace(/\]$/, '').replace(/'$/, '');
@@ -295,6 +309,117 @@
     }
     return eventType;
   }
+  var Store = (function() {
+    function Store() {
+      this.__c__ = {
+        length: {
+          value: 0
+        }
+      };
+    }
+    var proto = Store.prototype;
+    proto.set = function(k, v) {
+      var self = this,
+          len = self.__c__['length'].value;
+      self.__c__[k] = {
+        value: v
+      };
+      self.setIndex(k, len);
+      self.__c__['length'].value++;
+    };
+    proto.get = function(k) {
+      var self = this,
+          c = self.__c__[k];
+      if (!c || c.removed) return undefined;
+      return c.value;
+    };
+    proto.delete = function(k) {
+      var self = this,
+          c = self.__c__[k];
+      if (!c) return false;
+      c.removed = true;
+      self.__c__['length'].value--;
+    };
+    proto.setIndex = function(k, idx) {
+      var self = this,
+          c = self.__c__[k];
+      if (!c || c.removed) return false;
+      c.index = idx;
+    };
+    proto.getIndex = function(k) {
+      var self = this,
+          c = self.__c__[k];
+      if (!c || c.removed) return undefined;
+      return c.index;
+    };
+    proto.toObj = function() {
+      var self = this,
+          obj = {};
+      for (var k in self.__c__) {
+        if (!hasProp.call(self.__c__, k)) continue;
+        if (!self.__c__[k] || self.__c__[k].removed) continue;
+        obj[k] = self.__c__[k].value;
+      }
+      return obj;
+    };
+    proto.toArray = function() {
+      var self = this,
+          obj = self.toObj();
+      return toArray(obj);
+    };
+    proto.fixIndex = function() {
+      var self = this,
+          i = 0;
+      forEach.call(self.toArray(), function(v, k) {
+        self.setIndex(k, i++);
+      });
+    };
+    proto.apply = function() {
+      return '大杀器';
+      var self = this,
+          len = self.get('length'),
+          method = arguments[0],
+          args = arrProto.slice.call(arguments, 1);
+      args.forEach(function(arg) {
+        switch (method) {
+          case 'push':
+            self.set(len, arg);
+            break;
+          case 'unshift':
+            forEach.call(self.toArray(), function(v, k) {
+              self.setIndex(k, ++k);
+            });
+            self.set(0, arg);
+            break;
+        }
+      });
+      switch (method) {
+        case 'pop':
+          self.delete(--len);
+          break;
+        case 'shift':
+          self.delete(0);
+          forEach.call(self.toArray(), function(v, k) {
+            self.setIndex(k, --k);
+          });
+          break;
+        case 'splice':
+          var vi = args.slice(2),
+              s = args[0],
+              l = args[1],
+              lst = range(s, s + l);
+          forEach.call(lst, function(v) {
+            self.delete(v);
+          });
+          forEach.call(vi, function(v) {
+            self.set(s++, v);
+          });
+          self.fixIndex();
+          break;
+      }
+    };
+    return Store;
+  })();
   var Observer = (function() {
     function Observer() {
       this.eventHandlerObj = {};
@@ -484,8 +609,8 @@
         var oact = $node.getAttribute('oscar-action'),
           acl = /(\w+):(.*)/g.exec(oact);
         if (acl.length === 3) {
-          $node.addEventListener(acl[1], function() {
-            runWithScope(acl[2], scope);
+          $node.addEventListener(acl[1], function(e) {
+            runWithEvent(acl[2], scope, this, e);
           });
         }
       }
@@ -674,7 +799,8 @@
             self.buildObj(args, model);
           }
           arrProto[method].apply(this, args);
-          arrProto[method].apply(this.__c__, _args);
+          this.__c__.apply(method, _args);
+          //arrProto[method].apply(this.__c__, _args);
           self.buildObj(this, model, root);
           if (model !== undefined) {
             model.trigger('change:' + root);
@@ -688,16 +814,12 @@
       var self = this,
           properties = {};
       if (obj.__c__ === undefined) {
-        if (isArray(obj)) {
-          obj.__c__ = [];
-        } else {
-          obj.__c__ = {};
-        }
+        obj.__c__ = new Store();
       }
       getObjKeys(obj).forEach(function(k) {
         if (k === '__c__') return;
         if (typeof obj[k] === 'function') return;
-        obj.__c__[k] = obj[k];
+        obj.__c__.set(k, obj[k]);
         var path = genPath(root, k);
         if (isArray(obj[k])) {
           self.buildArray(obj[k], model, path);
@@ -707,7 +829,7 @@
         }
         properties[k] = {
           get: function() {
-            return this.__c__[k];
+            return this.__c__.get(k);
           },
           set: function(v) {
             if (isArray(v)) {
@@ -716,8 +838,8 @@
             if (isObj(v)) {
               self.buildObj(v, model, path);
             }
-            var isNew = (this.__c__[k] !== v);
-            this.__c__[k] = v;
+            var isNew = (this.__c__.get(k) !== v);
+            this.__c__.set(k, v);
             if (model !== undefined && isNew) {
               model.trigger('change:' + path);
             }

@@ -13,12 +13,19 @@ function onLoad() {
       todo.editing = true;
     },
     removeTodo: function(todo) {
-      todo.removed = true
+      todo.removed = true;
     },
     allDone: function() {
+      var bool = data.filterTodos.some(function(v) {return !v.completed});
       data.filterTodos.forEach(function(d) {
-        d.completed = !d.completed;
+        d.completed = bool;
       });
+    },
+    submitEdit: function(todo, $this, $event) {
+      if ($event.keyCode === 13) {
+        todo.title = $this.value;
+        todo.editing = false;
+      }
     }
   };
   document.getElementById('new-todo').addEventListener('keydown', function(e) {
@@ -26,6 +33,7 @@ function onLoad() {
       var title = this.value;
       var todo = {
         title: title,
+        hide: false,
         completed: false,
         editing: false,
         removed: false
@@ -42,16 +50,20 @@ function onLoad() {
   function filter() {
     switch (data.filter) {
       case 'all':
-        data.filterTodos = data.todos;
+        data.filterTodos.forEach(function(todo) {
+          todo.hide = false;
+        });
         break;
       case 'active':
-        data.filterTodos = data.todos.filter(function(v) {
-          return !v.completed;
+        data.filterTodos.forEach(function(todo) {
+          todo.hide = false;
+          if (todo.completed) todo.hide = true;
         });
         break;
       case 'completed':
-        data.filterTodos = data.todos.filter(function(v) {
-          return v.completed;
+        data.filterTodos.forEach(function(todo) {
+          todo.hide = false;
+          if (!todo.completed) todo.hide = true;
         });
         break;
     }
@@ -61,7 +73,11 @@ function onLoad() {
   });
   model.watch('filter', filter);
   model.watch('filterTodos', function() {
-    data.remaining = data.filterTodos.length;
+    var count = 0;
+    data.todos.forEach(function(todo) {
+      if (!todo.removed) count++;
+    });
+    data.remaining = count;
   });
   window.data = data;
   window.model = model;

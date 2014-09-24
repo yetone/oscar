@@ -15,13 +15,13 @@
       <section id="main">
         <input id="toggle-all" type="checkbox" oscar-action="click: allDone()">
         <ul id="todo-list">
-          <li class="todo" oscar-for="todo in filterTodos" oscar-class="{completed: todo.completed, editing: todo.editing, hidden: todo.removed}">
+          <li class="todo" oscar-for="todo in filterTodos" oscar-class="{completed: todo.completed, editing: todo.editing, hidden: todo.removed || todo.hide}">
             <div class="view">
               <input class="toggle" type="checkbox" oscar-bind="todo.completed">
               <label oscar-action="dblclick: editTodo(todo)">{{ todo.title }}</label>
               <button class="destroy" oscar-action="click: removeTodo(todo)"></button>
             </div>
-            <input class="edit" type="text" >
+            <input class="edit" type="text" value="{{todo.title}}" oscar-action="keydown: submitEdit(todo, $this, $event)">
           </li>
         </ul>
       </section>
