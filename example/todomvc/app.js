@@ -14,11 +14,27 @@ function onLoad() {
     },
     removeTodo: function(todo) {
       todo.removed = true;
+      if (todo.completed) {
+        data.completedCount -= 1;
+      } else {
+        data.remaining -= 1;
+      }
+    },
+    completeTodo: function(todo, bool) {
+      if (todo.completed === bool || todo.removed) return;
+      if (bool) {
+        data.completedCount += 1;
+        data.remaining -= 1;
+      } else {
+        data.completedCount -= 1;
+        data.remaining += 1;
+      }
+      todo.completed = bool;
     },
     allDone: function() {
       var bool = data.todos.some(function(v) {return !v.completed});
-      data.todos.forEach(function(d) {
-        d.completed = bool;
+      data.todos.forEach(function(todo) {
+        data.completeTodo(todo, bool)
       });
     },
     submitEdit: function(todo, $this, $event) {
@@ -29,7 +45,7 @@ function onLoad() {
     },
     removeCompleted: function() {
       data.todos.forEach(function(todo) {
-        todo.completed && (todo.removed = true);
+        todo.completed && (data.removeTodo(todo));
       });
     }
   };
@@ -74,7 +90,7 @@ function onLoad() {
     }
   }
   model.watch('filter', filter);
-  model.watch('todos', function() {
+  model.watch('*', function() {
     var remaining = 0,
         completedCount = 0;
     data.todos.forEach(function(todo) {

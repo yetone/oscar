@@ -804,6 +804,7 @@
           self.buildObj(this, model, root);
           if (model !== undefined) {
             model.trigger('change:' + root);
+            model.trigger('change:*');
           }
         };
       });
@@ -842,9 +843,7 @@
             this.__c__.set(k, v);
             if (model !== undefined && isNew) {
               model.trigger('change:' + path);
-              if (path.split('.')[0] !== path) {
-                model.trigger('change:' + path.split('.')[0]);
-              }
+              model.trigger('change:*');
             }
           }
         };
