@@ -4,6 +4,7 @@
       objProto = window.Object.prototype,
       eventProto = window.Event.prototype,
       elProto = window.Element.prototype,
+      hasProp = ({}).hasOwnProperty,
       def = window.Object.defineProperty,
       defs = window.Object.defineProperties,
       getObjKeys = window.Object.keys,
@@ -138,6 +139,18 @@
       obj[k] = a[k];
     }
     return obj;
+  }
+  function _extends(child, parent) {
+    function fix() {
+      this.constructor = child;
+    }
+    for (var k in parent) {
+      if (hasProp.call(parent, k)) child[k] = parent[k];
+    }
+    fix.prototype = parent.prototype;
+    child.prototype = new fix();
+    child.__super__ = parent.prototype;
+    return child;
   }
   function getWindow() {
     return (new Function('return this;'))();
@@ -282,15 +295,11 @@
     }
     return eventType;
   }
-  var Model = (function() {
-    function Model(obj) {
-      this.$el = obj.$el;
-      this.tpl = obj.tpl;
-      this.data = obj.data;
-      this.inited = obj.inited || false;
+  var Observer = (function() {
+    function Observer() {
       this.eventHandlerObj = {};
     }
-    var proto = Model.prototype;
+    var proto = Observer.prototype;
     proto.on = function(eventType, cbk) {
       if (!isFunction(cbk)) {
         throw new Error('eventHandler must be a function');
@@ -314,7 +323,7 @@
     };
     proto.trigger = function(e) {
       var self = this,
-          handlerArgs = window.Array.prototype.slice(arguments, 1);
+        handlerArgs = window.Array.prototype.slice(arguments, 1);
       if (e in self.eventHandlerObj) {
         self.eventHandlerObj[e].forEach(function(cbk) {
           cbk && cbk.apply(self, handlerArgs);
@@ -328,6 +337,19 @@
       self.on('change:' + e, cbk);
       cbk();
     };
+    return Observer;
+  })();
+  var Model = (function(_super) {
+    _extends(Model, _super);
+    function Model(obj) {
+      this.$el = obj.$el;
+      this.tpl = obj.tpl;
+      this.data = obj.data;
+      this.inited = obj.inited || false;
+
+      return Model.__super__.constructor.apply(this, arguments);
+    }
+    var proto = Model.prototype;
     proto.getBindValues = function(txt, scope) {
       scope = scope || this.data;
       var self = this,
@@ -353,11 +375,10 @@
       });
       return bvs;
     };
-    proto.render = function($node, scope, debug) {
+    proto.render = function($node, scope) {
       $node = $node || this.$el;
       scope = scope || this.data;
       var self = this,
-          $childNodes = toArray($node.childNodes),
           bind, eventType, multiple, hasBind, hasClass, hasAction, hasIf, hasFor, path,
           bindValue, bindValues, attrs;
       function _bind(obj, attr) {
@@ -626,7 +647,7 @@
       }
     };
     return Model;
-  })();
+  })(Observer);
   window.Oscar = (function() {
     function Oscar() {
       this.modelList = [];
