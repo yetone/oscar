@@ -164,6 +164,15 @@
   function getWindow() {
     return (new Function('return this;'))();
   }
+  function getObjValues(obj) {
+    var acc = [];
+    for (var k in obj) {
+      if (!hasProp.call(obj, k)) continue;
+      // must use push
+      acc.push(obj[k]);
+    }
+    return acc;
+  }
   function parseEvalStr(txt) {
     var acc = [],
         obj = {},
@@ -205,6 +214,8 @@
         }
       }
       if (c === '\'') {
+        if (txt.charAt(i + 1) === ']') continue;
+        if (txt.charAt(i - 1) === '[') continue;
         if (squoteCount === 0) {
           squoteCount++;
         } else {
@@ -212,6 +223,8 @@
         }
       }
       if (c === '"') {
+        if (txt.charAt(i + 1) === ']') continue;
+        if (txt.charAt(i - 1) === '[') continue;
         if (dquoteCount === 0) {
           dquoteCount++;
         } else {
@@ -456,10 +469,16 @@
       }
       return self;
     };
-    proto.watch = function(e, cbk) {
+    proto.watch = function(el, cbk) {
       var self = this;
-      self.on('set:' + e, cbk);
-      self.on('change:' + e, cbk);
+      if (isStr(el)) {
+        el = el.split(' ');
+      }
+      forEach.call(el, function(e) {
+        self.on('set:' + e, cbk);
+        self.on('change:' + e, cbk);
+        self.on('change:' + genPath(e, '__index__'), cbk);
+      });
       cbk();
     };
     return Observer;
@@ -475,28 +494,18 @@
       return Model.__super__.constructor.apply(this, arguments);
     }
     var proto = Model.prototype;
-    proto.getBindValues = function(txt, scope) {
-      scope = scope || this.data;
-      var self = this,
-          m = txt.match(/\{\{.*?\}\}/g),
-          keys = getObjKeys(scope),
+    proto.getBindValues = function(txt) {
+      var m = txt.match(/\{\{.*?\}\}/g),
           bvs = [],
-          m0;
+          pl;
       if (!m) return bvs;
       m.forEach(function(str) {
         str = str.substr(2, str.length - 4).trim();
-        m0 = str.match(/[a-zA-Z_][a-zA-Z0-9_]*(\[['"]?[0-9a-zA-Z_]+['"]?\])?(\.[0-9a-zA-Z_]+)?/g);
-        if (!m0) return;
-        m0.forEach(function(str0) {
-          var strl = str0.split(/\[|\]/);
-          if (keys.has(strl[0])) {
-            var path = genPath(str0);
-            if (path !== path.split('.')[0]) {
-              bvs.add(path.split('.')[0]);
-            }
-            bvs.add(path);
-          }
-        });
+        pl = getObjValues(parseEvalStr(str));
+        bvs.add(pl.join('.'));
+        for (var i = 1; i < pl.length; i++) {
+          bvs.add(pl.slice(0, -i).join('.'));
+        }
       });
       return bvs;
     };
@@ -510,14 +519,12 @@
         var bindValues = self.getBindValues(obj[attr], scope),
             es = getEvalString(obj[attr]);
         if (es) {
-          bindValues.forEach(function(path) {
-            self.watch(path, function() {
-              try {
-                obj[attr] = runWithScope(es, scope);
-              } catch(e) {
-                console.log(e);
-              }
-            });
+          self.watch(bindValues, function() {
+            try {
+              obj[attr] = runWithScope(es, scope);
+            } catch(e) {
+              console.log(e);
+            }
           });
         }
       }
@@ -592,16 +599,14 @@
       if (hasClass) {
         var ocls = $node.getAttribute('oscar-class');
         bindValues = self.getBindValues('{{' + ocls + '}}', scope);
-        bindValues.forEach(function(path) {
-          self.watch(path, function() {
-            var classObj = runWithScope('(' + ocls + ')', scope);
-            getObjKeys(classObj).forEach(function(cls) {
-              if (classObj[cls] === true) {
-                $node.classList.add(cls);
-              } else {
-                $node.classList.remove(cls);
-              }
-            });
+        self.watch(bindValues, function() {
+          var classObj = runWithScope('(' + ocls + ')', scope);
+          getObjKeys(classObj).forEach(function(cls) {
+            if (classObj[cls] === true) {
+              $node.classList.add(cls);
+            } else {
+              $node.classList.remove(cls);
+            }
           });
         });
       }
@@ -622,27 +627,25 @@
             $pn = $node.parentNode,
             removed = false;
         bindValues = self.getBindValues('{{' + exp + '}}', scope);
-        bindValues.forEach(function(path) {
-          self.watch(path, function() {
-            if (runWithScope(exp, scope)) {
-              if (!removed) return;
-              var $node0 = $tmp;
-              if ($ps && $ps.nextSibling) {
-                $pn.insertBefore($node0, $ps.nextSibling);
-              } else if ($ns) {
-                $pn.insertBefore($node0, $ns);
-              } else if ($pn) {
-                $pn.appendChild($node0);
-              }
-              self.render($node0, null, true);
-              $node = $node0;
-              $tmp = $node;
-              removed = false;
-            } else {
-              $node.remove();
-              removed = true;
+        self.watch(bindValues, function() {
+          if (runWithScope(exp, scope)) {
+            if (!removed) return;
+            var $node0 = $tmp;
+            if ($ps && $ps.nextSibling) {
+              $pn.insertBefore($node0, $ps.nextSibling);
+            } else if ($ns) {
+              $pn.insertBefore($node0, $ns);
+            } else if ($pn) {
+              $pn.appendChild($node0);
             }
-          });
+            self.render($node0, null, true);
+            $node = $node0;
+            $tmp = $node;
+            removed = false;
+          } else {
+            $node.remove();
+            removed = true;
+          }
         });
       }
       if (hasFor) {
@@ -655,7 +658,6 @@
             expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
             acc = [];
         if (expl && expl.length === 3) {
-          bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
           if (!$node.inited) {
             function render() {
               var dv = eval('(scope' + genS(expl[2]) + ')'),
@@ -739,28 +741,25 @@
                 attrs.forEach(function(v) {
                   _bind(v, 'value');
                 });
-                bindValues.forEach(function(path) {
-                  self.watch(path, function() {
-                    var dv = eval('(scope' + genS(expl[2]) + ')'),
-                      hasMe;
-                    if (isObj(dv)) {
-                      hasMe = v in dv;
-                    } else {
-                      hasMe = k in dv;
-                    }
-                    if (!hasMe) {
-                      $node.remove();
-                    }
-                  });
+                self.watch(bindValues, function() {
+                  var dv = eval('(scope' + genS(expl[2]) + ')'),
+                    hasMe;
+                  if (isObj(dv)) {
+                    hasMe = v in dv;
+                  } else {
+                    hasMe = k in dv;
+                  }
+                  if (!hasMe) {
+                    $node.remove();
+                  }
                 });
                 $node.inited = true;
                 self.render($node);
               });
             }
-            bindValues.forEach(function(bv) {
-              self.watch(bv, function() {
-                render();
-              });
+            bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
+            self.watch(bindValues, function() {
+              render();
             });
           }
         }
@@ -787,6 +786,7 @@
           args;
       ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
         arr[method] = function() {
+          var oldL = this.length;
           args = toArray(arguments);
           // clone arguments
           _args = toArray(arguments);
@@ -800,11 +800,13 @@
           }
           arrProto[method].apply(this, args);
           this.__c__.apply(method, _args);
-          //arrProto[method].apply(this.__c__, _args);
           self.buildObj(this, model, root);
           if (model !== undefined) {
             model.trigger('change:' + root);
             model.trigger('change:*');
+            if (oldL !== this.length) {
+              model.trigger('change:' + genPath(root, '__index__'));
+            }
           }
         };
       });

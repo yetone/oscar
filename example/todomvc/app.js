@@ -90,7 +90,7 @@ function onLoad() {
     }
   }
   model.watch('filter', filter);
-  model.watch('*', function() {
+  model.watch('todos', function() {
     var remaining = 0,
         completedCount = 0;
     data.todos.forEach(function(todo) {
