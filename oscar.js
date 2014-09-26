@@ -175,11 +175,13 @@
   }
   function parseEvalStr(txt) {
     var acc = [],
+        strL = [],
         obj = {},
         dquoteCount = 0,
         squoteCount = 0,
         bi,
-        ei;
+        ei,
+        str;
     for (var i = 0, l = txt.length; i < l; i++) {
       var c = txt.charAt(i),
           substr;
@@ -192,6 +194,7 @@
             ei = l;
             substr = txt.substr(bi, ei - bi);
             acc.push(substr);
+            strL.push(acc.join('.'));
             obj[bi] = substr;
             bi = undefined;
           }
@@ -200,6 +203,13 @@
             ei = i;
             substr = txt.substr(bi, ei - bi);
             acc.push(substr);
+            if (!/[\.\[\]'"]/.test(c)) {
+              str = acc.join('.');
+              if (str) {
+                strL.push(str);
+                acc = [];
+              }
+            }
             obj[bi] = substr;
             bi = undefined;
           }
@@ -208,9 +218,14 @@
         if (bi !== undefined) {
           ei = i;
           substr = txt.substr(bi, ei - bi);
-          acc.push(substr);
+          //acc.push(substr);
           obj[bi] = substr;
           bi = undefined;
+        }
+        str = acc.join('.');
+        if (str) {
+          strL.push(str);
+          acc = [];
         }
       }
       if (c === '\'') {
@@ -232,6 +247,7 @@
         }
       }
     }
+    obj['strL'] = strL;
     return obj;
   }
   function replaceEvalStr(txt, searchstr, newstr) {
@@ -242,7 +258,8 @@
       return (a | 0) > (b | 0);
     });
     keys.forEach(function(k) {
-      k = k | 0;
+      k = +k;
+      if (isNaN(k)) return;
       if (map[k] === searchstr) {
         txt = txt.splice(k + dlt, searchstr.length, newstr);
         dlt = dlt + newstr.length - searchstr.length;
@@ -389,47 +406,6 @@
     };
     proto.apply = function() {
       return '大杀器';
-      var self = this,
-          len = self.get('length'),
-          method = arguments[0],
-          args = arrProto.slice.call(arguments, 1);
-      args.forEach(function(arg) {
-        switch (method) {
-          case 'push':
-            self.set(len, arg);
-            break;
-          case 'unshift':
-            forEach.call(self.toArray(), function(v, k) {
-              self.setIndex(k, ++k);
-            });
-            self.set(0, arg);
-            break;
-        }
-      });
-      switch (method) {
-        case 'pop':
-          self.delete(--len);
-          break;
-        case 'shift':
-          self.delete(0);
-          forEach.call(self.toArray(), function(v, k) {
-            self.setIndex(k, --k);
-          });
-          break;
-        case 'splice':
-          var vi = args.slice(2),
-              s = args[0],
-              l = args[1],
-              lst = range(s, s + l);
-          forEach.call(lst, function(v) {
-            self.delete(v);
-          });
-          forEach.call(vi, function(v) {
-            self.set(s++, v);
-          });
-          self.fixIndex();
-          break;
-      }
     };
     return Store;
   })();
@@ -501,11 +477,14 @@
       if (!m) return bvs;
       m.forEach(function(str) {
         str = str.substr(2, str.length - 4).trim();
-        pl = getObjValues(parseEvalStr(str));
-        bvs.add(pl.join('.'));
-        for (var i = 1; i < pl.length; i++) {
-          bvs.add(pl.slice(0, -i).join('.'));
-        }
+        pl = parseEvalStr(str).strL;
+        pl.forEach(function(v){
+          bvs.add(v);
+          var lst = v.split('.');
+          for(var i = 1; i < lst.length; i++){
+            bvs.add(lst.slice(0, -i).join('.'));
+          }
+        })
       });
       return bvs;
     };
@@ -548,117 +527,116 @@
       });
       if (hasFor && !$node.inited) {
         var $tmp = $node,
-          $ps = $node.previousSibling,
-          $ns = $node.nextSibling,
-          $pn = $node.parentNode,
-          $cns = $node.childNodes,
-          exp = $node.getAttribute('oscar-for'),
-          expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-          acc = [];
-        if (expl && expl.length === 3) {
-          function render() {
-            var dv = eval('(scope' + genS(expl[2]) + ')'),
+            $ps = $node.previousSibling,
+            $ns = $node.nextSibling,
+            $pn = $node.parentNode,
+            $cns = $node.childNodes,
+            exp = $node.getAttribute('oscar-for'),
+            expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+            acc = [];
+        if (!expl && expl.length !== 3) return;
+        function render() {
+          var dv = eval('(scope' + genS(expl[2]) + ')'),
               obj = dv;
-            if (isObj(dv)) {
-              obj = getObjKeys(dv);
-            }
-            $node.remove();
-            obj.forEach(function(v, k) {
-              if (isObj(dv) && v === '__c__') return;
-              var $node,
+          if (isObj(dv)) {
+            obj = getObjKeys(dv);
+          }
+          $node.remove();
+          obj.forEach(function(v, k) {
+            if (isObj(dv) && v === '__c__') return;
+            var $node,
                 re = /\{\{(.*?)\}\}/g,
                 idx = k,
                 kstr = '$index';
-              if (isObj(dv)) {
-                idx = v;
-                kstr = '$key';
-              }
-              if (acc[idx]) {
-                $node = acc[idx]['$node'];
-              } else {
-                $node = $tmp.cloneNode(true);
-                // 起名什么的最讨厌了！
-                (function __($node) {
-                  if ($node.nodeType === 3) {
-                    $node.textContent = $node.textContent.replace(re, function(_, a) {
-                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                      return '{{' + a + '}}';
-                    });
-                    return;
-                  }
-                  var oscarAttrs = ['bind', 'action', 'class', 'if'],
+            if (isObj(dv)) {
+              idx = v;
+              kstr = '$key';
+            }
+            if (acc[idx]) {
+              $node = acc[idx]['$node'];
+            } else {
+              $node = $tmp.cloneNode(true);
+              // 起名什么的最讨厌了！
+              (function __($node) {
+                if ($node.nodeType === 3) {
+                  $node.textContent = $node.textContent.replace(re, function(_, a) {
+                    a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                    a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                    return '{{' + a + '}}';
+                  });
+                  return;
+                }
+                var oscarAttrs = ['bind', 'action', 'class', 'if'],
                     attrs = toArray($node.attributes),
                     preffix = 'oscar-',
                     $cns = toArray($node.childNodes);
-                  oscarAttrs.forEach(function(_attr) {
-                    var attr = preffix + _attr,
-                      a;
-                    if ($node.hasAttribute(attr)) {
-                      a = $node.getAttribute(attr);
-                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                      $node.setAttribute(attr, a);
-                    }
-                  });
-                  attrs = attrs.filter(function(v) {
-                    return v.name.indexOf('oscar-') !== 0;
-                  });
-                  attrs.forEach(function(v) {
-                    v.value = v.value.replace(re, function(_, a) {
-                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                      return '{{' + a + '}}';
-                    });
-                  });
-                  $cns.forEach(function($n) {
-                    __($n);
-                  });
-                })($node);
-                acc.push({
-                  $node: $node
+                oscarAttrs.forEach(function(_attr) {
+                  var attr = preffix + _attr,
+                    a;
+                  if ($node.hasAttribute(attr)) {
+                    a = $node.getAttribute(attr);
+                    a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                    a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                    $node.setAttribute(attr, a);
+                  }
                 });
-              }
+                attrs = attrs.filter(function(v) {
+                  return v.name.indexOf('oscar-') !== 0;
+                });
+                attrs.forEach(function(v) {
+                  v.value = v.value.replace(re, function(_, a) {
+                    a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                    a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                    return '{{' + a + '}}';
+                  });
+                });
+                $cns.forEach(function($n) {
+                  __($n);
+                });
+              })($node);
+              acc.push({
+                $node: $node
+              });
+            }
 
-              if (window.document.contains($node)) return;
-              if ($ns) {
-                $pn.insertBefore($node, $ns);
-              } else if ($ps && $ps.nextSibling) {
-                $pn.insertBefore($node, $ps.nextSibling);
-              } else if ($pn) {
-                $pn.appendChild($node);
-              }
-              $ps = $node.previousSibling;
-              $ns = $node.nextSibling;
-              $pn = $node.parentNode;
-              $cns = $node.childNodes;
-              var attrs = toArray($node.attributes).filter(function(v) {
-                return v.name.indexOf('oscar-') !== 0;
-              });
-              attrs.forEach(function(v) {
-                _bind(v, 'value');
-              });
-              self.watch(bindValues, function() {
-                var dv = eval('(scope' + genS(expl[2]) + ')'),
-                  hasMe;
-                if (isObj(dv)) {
-                  hasMe = v in dv;
-                } else {
-                  hasMe = k in dv;
-                }
-                if (!hasMe) {
-                  $node.remove();
-                }
-              });
-              $node.inited = true;
-              self.render($node);
+            if (window.document.contains($node)) return;
+            if ($ns) {
+              $pn.insertBefore($node, $ns);
+            } else if ($ps && $ps.nextSibling) {
+              $pn.insertBefore($node, $ps.nextSibling);
+            } else if ($pn) {
+              $pn.appendChild($node);
+            }
+            $ps = $node.previousSibling;
+            $ns = $node.nextSibling;
+            $pn = $node.parentNode;
+            $cns = $node.childNodes;
+            var attrs = toArray($node.attributes).filter(function(v) {
+              return v.name.indexOf('oscar-') !== 0;
             });
-          }
-          bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
-          self.watch(bindValues, function() {
-            render();
+            attrs.forEach(function(v) {
+              _bind(v, 'value');
+            });
+            self.watch(bindValues, function() {
+              var dv = eval('(scope' + genS(expl[2]) + ')'),
+                hasMe;
+              if (isObj(dv)) {
+                hasMe = v in dv;
+              } else {
+                hasMe = k in dv;
+              }
+              if (!hasMe) {
+                $node.remove();
+              }
+            });
+            $node.inited = true;
+            self.render($node);
           });
         }
+        bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
+        self.watch(bindValues, function() {
+          render();
+        });
         return;
       }
       if (hasBind && bind) {
