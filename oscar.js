@@ -546,6 +546,121 @@
       attrs.forEach(function(v) {
         _bind(v, 'value');
       });
+      if (hasFor && !$node.inited) {
+        var $tmp = $node,
+          $ps = $node.previousSibling,
+          $ns = $node.nextSibling,
+          $pn = $node.parentNode,
+          $cns = $node.childNodes,
+          exp = $node.getAttribute('oscar-for'),
+          expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+          acc = [];
+        if (expl && expl.length === 3) {
+          function render() {
+            var dv = eval('(scope' + genS(expl[2]) + ')'),
+              obj = dv;
+            if (isObj(dv)) {
+              obj = getObjKeys(dv);
+            }
+            $node.remove();
+            obj.forEach(function(v, k) {
+              if (isObj(dv) && v === '__c__') return;
+              var $node,
+                re = /\{\{(.*?)\}\}/g,
+                idx = k,
+                kstr = '$index';
+              if (isObj(dv)) {
+                idx = v;
+                kstr = '$key';
+              }
+              if (acc[idx]) {
+                $node = acc[idx]['$node'];
+              } else {
+                $node = $tmp.cloneNode(true);
+                // 起名什么的最讨厌了！
+                (function __($node) {
+                  if ($node.nodeType === 3) {
+                    $node.textContent = $node.textContent.replace(re, function(_, a) {
+                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                      return '{{' + a + '}}';
+                    });
+                    return;
+                  }
+                  var oscarAttrs = ['bind', 'action', 'class', 'if'],
+                    attrs = toArray($node.attributes),
+                    preffix = 'oscar-',
+                    $cns = toArray($node.childNodes);
+                  oscarAttrs.forEach(function(_attr) {
+                    var attr = preffix + _attr,
+                      a;
+                    if ($node.hasAttribute(attr)) {
+                      a = $node.getAttribute(attr);
+                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                      $node.setAttribute(attr, a);
+                    }
+                  });
+                  attrs = attrs.filter(function(v) {
+                    return v.name.indexOf('oscar-') !== 0;
+                  });
+                  attrs.forEach(function(v) {
+                    v.value = v.value.replace(re, function(_, a) {
+                      a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
+                      a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                      return '{{' + a + '}}';
+                    });
+                  });
+                  $cns.forEach(function($n) {
+                    __($n);
+                  });
+                })($node);
+                acc.push({
+                  $node: $node
+                });
+              }
+
+              if (window.document.contains($node)) return;
+              if ($ns) {
+                $pn.insertBefore($node, $ns);
+              } else if ($ps && $ps.nextSibling) {
+                $pn.insertBefore($node, $ps.nextSibling);
+              } else if ($pn) {
+                $pn.appendChild($node);
+              }
+              $ps = $node.previousSibling;
+              $ns = $node.nextSibling;
+              $pn = $node.parentNode;
+              $cns = $node.childNodes;
+              var attrs = toArray($node.attributes).filter(function(v) {
+                return v.name.indexOf('oscar-') !== 0;
+              });
+              attrs.forEach(function(v) {
+                _bind(v, 'value');
+              });
+              self.watch(bindValues, function() {
+                var dv = eval('(scope' + genS(expl[2]) + ')'),
+                  hasMe;
+                if (isObj(dv)) {
+                  hasMe = v in dv;
+                } else {
+                  hasMe = k in dv;
+                }
+                if (!hasMe) {
+                  $node.remove();
+                }
+              });
+              $node.inited = true;
+              self.render($node);
+            });
+          }
+          bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
+          self.watch(bindValues, function() {
+            render();
+          });
+        }
+        return;
+      }
       if (hasBind && bind) {
         bindValue = $node.getAttribute('oscar-bind');
         path = genPath(bindValue);
@@ -647,122 +762,6 @@
             removed = true;
           }
         });
-      }
-      if (hasFor) {
-        var $tmp = $node,
-            $ps = $node.previousSibling,
-            $ns = $node.nextSibling,
-            $pn = $node.parentNode,
-            $cns = $node.childNodes,
-            exp = $node.getAttribute('oscar-for'),
-            expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-            acc = [];
-        if (expl && expl.length === 3) {
-          if (!$node.inited) {
-            function render() {
-              var dv = eval('(scope' + genS(expl[2]) + ')'),
-                obj = dv;
-              if (isObj(dv)) {
-                obj = getObjKeys(dv);
-              }
-              $node.remove();
-              obj.forEach(function(v, k) {
-                if (isObj(dv) && v === '__c__') return;
-                var $node,
-                    re = /\{\{(.*?)\}\}/g,
-                    idx = k,
-                    kstr = '$index';
-                if (isObj(dv)) {
-                  idx = v;
-                  kstr = '$key';
-                }
-                if (acc[idx]) {
-                  $node = acc[idx]['$node'];
-                } else {
-                  $node = $tmp.cloneNode(true);
-                  // 起名什么的最讨厌了！
-                  (function __($node) {
-                    if ($node.nodeType === 3) {
-                      $node.textContent = $node.textContent.replace(re, function(_, a) {
-                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                        return '{{' + a + '}}';
-                      });
-                      return;
-                    }
-                    var oscarAttrs = ['bind', 'action', 'class', 'if'],
-                      attrs = toArray($node.attributes),
-                      preffix = 'oscar-',
-                      $cns = toArray($node.childNodes);
-                    oscarAttrs.forEach(function(_attr) {
-                      var attr = preffix + _attr,
-                        a;
-                      if ($node.hasAttribute(attr)) {
-                        a = $node.getAttribute(attr);
-                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                        $node.setAttribute(attr, a);
-                      }
-                    });
-                    attrs = attrs.filter(function(v) {
-                      return v.name.indexOf('oscar-') !== 0;
-                    });
-                    attrs.forEach(function(v) {
-                      v.value = v.value.replace(re, function(_, a) {
-                        a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                        a = replaceEvalStr(a, kstr, '\'' + idx + '\'');
-                        return '{{' + a + '}}';
-                      });
-                    });
-                    $cns.forEach(function($n) {
-                      __($n);
-                    });
-                  })($node);
-                  acc.push({
-                    $node: $node
-                  });
-                }
-
-                if (window.document.contains($node)) return;
-                if ($ns) {
-                  $pn.insertBefore($node, $ns);
-                } else if ($ps && $ps.nextSibling) {
-                  $pn.insertBefore($node, $ps.nextSibling);
-                } else if ($pn) {
-                  $pn.appendChild($node);
-                }
-                $ps = $node.previousSibling;
-                $ns = $node.nextSibling;
-                $pn = $node.parentNode;
-                $cns = $node.childNodes;
-                var attrs = toArray($node.attributes).filter(function(v) {
-                  return v.name.indexOf('oscar-') !== 0;
-                });
-                attrs.forEach(function(v) {
-                  _bind(v, 'value');
-                });
-                self.watch(bindValues, function() {
-                  var dv = eval('(scope' + genS(expl[2]) + ')'),
-                    hasMe;
-                  if (isObj(dv)) {
-                    hasMe = v in dv;
-                  } else {
-                    hasMe = k in dv;
-                  }
-                  if (!hasMe) {
-                    $node.remove();
-                  }
-                });
-                $node.inited = true;
-                self.render($node);
-              });
-            }
-            bindValues = self.getBindValues('{{' + expl[2] + '}}', scope);
-            self.watch(bindValues, function() {
-              render();
-            });
-          }
-        }
       }
       if (window.document.contains($node)) {
         toArray($node.childNodes).forEach(function($node) {
