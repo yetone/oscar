@@ -21,14 +21,6 @@ function onLoad() {
       }
     },
     completeTodo: function(todo, bool) {
-      if (todo.completed === bool || todo.removed) return;
-      if (bool) {
-        data.completedCount += 1;
-        data.remaining -= 1;
-      } else {
-        data.completedCount -= 1;
-        data.remaining += 1;
-      }
       todo.completed = bool;
     },
     allDone: function() {
@@ -90,7 +82,7 @@ function onLoad() {
     }
   }
   model.watch('filter', filter);
-  model.watch('todos', function() {
+  model.watch('*', function() {
     var remaining = 0,
         completedCount = 0;
     data.todos.forEach(function(todo) {
