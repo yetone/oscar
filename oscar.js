@@ -248,6 +248,10 @@
         }
       }
     }
+    var _str = acc.join('.');
+    if (_str) {
+      strL.push(_str);
+    }
     obj['strL'] = strL;
     return obj;
   }
