@@ -1,5 +1,6 @@
 ;(function(window, undefined) {
-  var arrProto = window.Array.prototype,
+  var PREFIX = 'oscar-',
+      arrProto = window.Array.prototype,
       strProto = window.String.prototype,
       objProto = window.Object.prototype,
       eventProto = window.Event.prototype,
@@ -513,14 +514,14 @@
       bind = getBind($node);
       eventType = getEventType($node);
       multiple = $node.hasAttribute('multiple');
-      hasBind = $node.hasAttribute('oscar-bind');
-      hasClass = $node.hasAttribute('oscar-class');
-      hasAction = $node.hasAttribute('oscar-action');
-      hasIf = $node.hasAttribute('oscar-if');
-      hasFor = $node.hasAttribute('oscar-for');
+      hasBind = $node.hasAttribute(PREFIX + 'bind');
+      hasClass = $node.hasAttribute(PREFIX + 'class');
+      hasAction = $node.hasAttribute(PREFIX + 'action');
+      hasIf = $node.hasAttribute(PREFIX + 'if');
+      hasFor = $node.hasAttribute(PREFIX + 'for');
       attrs = toArray($node.attributes);
       attrs = attrs.filter(function(v) {
-        return v.name.indexOf('oscar-') !== 0;
+        return v.name.indexOf(PREFIX) !== 0;
       });
       attrs.forEach(function(v) {
         _bind(v, 'value');
@@ -531,7 +532,7 @@
             $ns = $node.nextSibling,
             $pn = $node.parentNode,
             $cns = $node.childNodes,
-            exp = $node.getAttribute('oscar-for'),
+            exp = $node.getAttribute(PREFIX + 'for'),
             expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
             acc = [];
         if (!expl && expl.length !== 3) return;
@@ -568,10 +569,9 @@
                 }
                 var oscarAttrs = ['bind', 'action', 'class', 'if'],
                     attrs = toArray($node.attributes),
-                    preffix = 'oscar-',
                     $cns = toArray($node.childNodes);
                 oscarAttrs.forEach(function(_attr) {
-                  var attr = preffix + _attr,
+                  var attr = PREFIX + _attr,
                     a;
                   if ($node.hasAttribute(attr)) {
                     a = $node.getAttribute(attr);
@@ -581,7 +581,7 @@
                   }
                 });
                 attrs = attrs.filter(function(v) {
-                  return v.name.indexOf('oscar-') !== 0;
+                  return v.name.indexOf(PREFIX) !== 0;
                 });
                 attrs.forEach(function(v) {
                   v.value = v.value.replace(re, function(_, a) {
@@ -612,7 +612,7 @@
             $pn = $node.parentNode;
             $cns = $node.childNodes;
             var attrs = toArray($node.attributes).filter(function(v) {
-              return v.name.indexOf('oscar-') !== 0;
+              return v.name.indexOf(PREFIX) !== 0;
             });
             attrs.forEach(function(v) {
               _bind(v, 'value');
@@ -640,7 +640,7 @@
         return;
       }
       if (hasBind && bind) {
-        bindValue = $node.getAttribute('oscar-bind');
+        bindValue = $node.getAttribute(PREFIX + 'bind');
         path = genPath(bindValue);
         if (multiple) {
           self.watch(path, function() {
@@ -690,7 +690,7 @@
         }
       }
       if (hasClass) {
-        var ocls = $node.getAttribute('oscar-class');
+        var ocls = $node.getAttribute(PREFIX + 'class');
         bindValues = self.getBindValues('{{' + ocls + '}}', scope);
         self.watch(bindValues, function() {
           var classObj = runWithScope('(' + ocls + ')', scope);
@@ -704,7 +704,7 @@
         });
       }
       if (hasAction) {
-        var oact = $node.getAttribute('oscar-action'),
+        var oact = $node.getAttribute(PREFIX + 'action'),
           acl = /(\w+):(.*)/g.exec(oact);
         if (acl.length === 3) {
           $node.addEventListener(acl[1], function(e) {
@@ -713,7 +713,7 @@
         }
       }
       if (hasIf) {
-        var exp = parseExp($node.getAttribute('oscar-if')),
+        var exp = parseExp($node.getAttribute(PREFIX + 'if')),
             $tmp = $node,
             $ps = $node.previousSibling,
             $ns = $node.nextSibling,
