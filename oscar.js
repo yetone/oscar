@@ -572,7 +572,7 @@
                     $cns = toArray($node.childNodes);
                 oscarAttrs.forEach(function(_attr) {
                   var attr = PREFIX + _attr,
-                    a;
+                      a;
                   if ($node.hasAttribute(attr)) {
                     a = $node.getAttribute(attr);
                     a = replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
