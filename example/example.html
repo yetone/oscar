@@ -9,6 +9,7 @@
         padding: 10px;
         margin: 10px;
         cursor: pointer;
+        display: inline-block;
       }
       #model2 .item.active {
         color: #fff;
@@ -28,10 +29,10 @@
       <ul>
         <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
       </ul>
-      <input type="text" oscar-bind="dict[3]">
+      <input oscar-for="v in dict" type="text" oscar-bind="v">
       <div>Dict:</div>
       <ul>
-        <li oscar-for="v in dict" oscar-class="{wow: v === 'wow'}">{{ $key }}: {{ v }}</li>
+        <li oscar-for="v in dict" oscar-class="{wow: v === 'wow'}" style="color: {{v}}">{{ $key }}: {{ v }}</li>
       </ul>
       <div oscar-if="age<10 and name === 'yetone'" style="color:red">
         AAAAAAAAAAAAAAAAAAAAAAA!{{age+2}}
@@ -51,10 +52,24 @@
       </ul>
     </div>
     <div id="model2">
-      <a class="item" oscar-action="click:mode='a'" oscar-class="{active: mode === 'a', other: mode === 'c'}">AAA</a>
-      <a class="item" oscar-action="click:mode='b'" oscar-class="{active: mode === 'b'}">BBB</a>
-      <a class="item" oscar-action="click:mode='c'" oscar-class="{active: mode === 'c'}">CCC</a>
-      <a class="item" oscar-action="click:mode='d'" oscar-class="{active: mode === 'd'}">DDD</a>
+      <label>
+        <input type="radio" name="mode" value="a" oscar-bind="mode"> AAA
+      </label>
+      <label>
+        <input type="radio" name="mode" value="b" oscar-bind="mode"> BBB
+      </label>
+      <label>
+        <input type="radio" name="mode" value="c" oscar-bind="mode"> CCC
+      </label>
+      <label>
+        <input type="radio" name="mode" value="d" oscar-bind="mode"> DDD
+      </label>
+      <div style="">
+        <a class="item" oscar-action="click:mode='a'" oscar-class="{active: mode === 'a', other: mode === 'c'}">AAA</a>
+        <a class="item" oscar-action="click:mode='b'" oscar-class="{active: mode === 'b'}">BBB</a>
+        <a class="item" oscar-action="click:mode='c'" oscar-class="{active: mode === 'c'}">CCC</a>
+        <a class="item" oscar-action="click:mode='d'" oscar-class="{active: mode === 'd'}">DDD</a>
+      </div>
     </div>
     <div id="model3">
       <select oscar-bind="country">

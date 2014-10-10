@@ -12,9 +12,9 @@ window.onload = function() {
       return 'It works!';
     },
     dict: {
-      a: 1,
-      b: 2,
-      3: 'c'
+      a: 'red',
+      b: 'green',
+      3: 'blue'
     }
   };
   window.data1 = {
