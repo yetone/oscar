@@ -25,4 +25,7 @@ gulp.task('scripts', function() {
 
 gulp.task('default', function() {
   gulp.run('lint', 'scripts');
+  gulp.watch('src/**/*.js', function() {
+    gulp.run('lint', 'scripts');
+  });
 });
