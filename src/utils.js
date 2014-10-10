@@ -1,3 +1,13 @@
+// for mocha
+try {
+  window;
+} catch(e) {
+  window = getWindow();
+  if (!window.Event) {
+    window.Event = function() {};
+    window.Element = function() {};
+  }
+}
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
@@ -8,7 +18,8 @@ var arrProto = window.Array.prototype,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
-    isArray = window.Array.isArray;
+    isArray = window.Array.isArray,
+    undefined;
 // 补丁，为了某些浏览器
 (function() {
   if (!elProto.addEventListener) {
@@ -183,7 +194,7 @@ function parseEvalStr(txt) {
     str;
   for (var i = 0, l = txt.length; i < l; i++) {
     var c = txt.charAt(i),
-      substr;
+        substr;
     if (squoteCount + dquoteCount === 0) {
       if (/[a-zA-Z0-9_$]/.test(c)) {
         if (bi === undefined) {
@@ -288,7 +299,7 @@ function genPath(base, k) {
 }
 function genS(str) {
   var strl = str.split('.'),
-    s = '';
+      s = '';
   for (var x in strl) {
     if (!strl.hasOwnProperty(x)) continue;
     s += '[\'' + strl[x] + '\']';

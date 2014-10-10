@@ -1,6 +1,7 @@
 var Model = require('./libs/model').Model,
     Store = require('./libs/store').Store,
-    utils = require('./utils');
+    utils = require('./utils'),
+    undefined;
 
 (function(window, undefined) {
   window.Oscar = (function() {

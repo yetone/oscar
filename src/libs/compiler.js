@@ -8,6 +8,7 @@ var actionDirective = require('./directives/action');
 var classDirective = require('./directives/class');
 var utils = require('../utils');
 var DOC = utils.DOC;
+var undefined;
 
 var compile = function(model, $node, scope) {
   $node = $node || model.$el;

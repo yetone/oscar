@@ -2,6 +2,7 @@
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {

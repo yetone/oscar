@@ -5,6 +5,7 @@ var config = require('../config');
 var observer = require('./observer');
 var compiler = require('./compiler');
 var utils = require('../utils');
+var undefined;
 
 var Model = (function(_super) {
   utils._extends(Model, _super);

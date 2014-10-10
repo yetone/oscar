@@ -3,15 +3,16 @@ var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
 var rename = require('gulp-rename');
 var browserify = require('gulp-browserify');
+var mocha = require('gulp-mocha');
 
 gulp.task('lint', function() {
-  gulp.src('./js/*.js')
+  return gulp.src('./js/*.js')
     .pipe(jshint())
     .pipe(jshint.reporter('default'));
 });
 
 gulp.task('scripts', function() {
-  gulp.src('src/app.js')
+  return gulp.src('src/app.js')
     .pipe(rename('oscar.js'))
     .pipe(browserify({
       insertGlobals: false,
@@ -21,6 +22,11 @@ gulp.task('scripts', function() {
     .pipe(rename('oscar.min.js'))
     .pipe(uglify())
     .pipe(gulp.dest('dist'));
+});
+
+gulp.task('test', function() {
+  return gulp.src('test/test.js', {read: false})
+    .pipe(mocha({reporter: 'nyan'}));
 });
 
 gulp.task('default', function() {
