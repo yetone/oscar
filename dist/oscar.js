@@ -1002,7 +1002,7 @@ function getEventType($node) {
 }
 function _bind(model, obj, attr, scope) {
   var bindValues = model.getBindValues(obj[attr], scope),
-    es = getEvalString(obj[attr]);
+      es = getEvalString(obj[attr]);
   if (es) {
     model.watch(bindValues, function() {
       try {
