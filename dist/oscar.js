@@ -913,7 +913,7 @@ function parseEvalStr(txt) {
 }
 function replaceEvalStr(txt, searchstr, newstr) {
   var map = parseEvalStr(txt),
-    keys = Object.keys(map),
+    keys = getObjKeys(map),
     dlt = 0;
   keys.sort(function(a, b) {
     return (a | 0) > (b | 0);
