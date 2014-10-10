@@ -77,4 +77,16 @@ describe('utils', function() {
     var str = "a['b']['c'][\"d\"][0][1].efg.h['2'].lmn[\"3\"]";
     assert.equal(utils.genPath(str), "a.b.c.d.0.1.efg.h.2.lmn.3");
   });
+  describe('parseEvalStr', function() {
+    var func = utils.parseEvalStr,
+        str = '"sdf"+name + age + \'weed\' + hello[\'ioi\']+32+"skdlf"+yoo.xxx["iui"].opop[34].cvcv',
+        obj = func(str),
+        arr = obj.strL;
+    assert.equal(5, arr.length);
+    assert.equal('name', arr[0]);
+    assert.equal('age', arr[1]);
+    assert.equal('hello.ioi', arr[2]);
+    assert.equal('32', arr[3]);
+    assert.equal('yoo.xxx.iui.opop.34.cvcv', arr[4]);
+  });
 });
