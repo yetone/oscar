@@ -832,13 +832,13 @@ function getObjValues(obj) {
 }
 function parseEvalStr(txt) {
   var acc = [],
-    strL = [],
-    obj = {},
-    dquoteCount = 0,
-    squoteCount = 0,
-    bi,
-    ei,
-    str;
+      strL = [],
+      obj = {},
+      dquoteCount = 0,
+      squoteCount = 0,
+      bi,
+      ei,
+      str;
   for (var i = 0, l = txt.length; i < l; i++) {
     var c = txt.charAt(i),
         substr;
@@ -852,6 +852,7 @@ function parseEvalStr(txt) {
           substr = txt.substr(bi, ei - bi);
           acc.push(substr);
           strL.push(acc.join('.'));
+          acc = [];
           obj[bi] = substr;
           bi = undefined;
         }
@@ -860,22 +861,21 @@ function parseEvalStr(txt) {
           ei = i;
           substr = txt.substr(bi, ei - bi);
           acc.push(substr);
-          if (!/[\.\[\]'"]/.test(c)) {
-            str = acc.join('.');
-            if (str) {
-              strL.push(str);
-              acc = [];
-            }
-          }
           obj[bi] = substr;
           bi = undefined;
+        }
+        if (!/[\.\[\]'"]/.test(c)) {
+          str = acc.join('.');
+          if (str) {
+            strL.push(str);
+            acc = [];
+          }
         }
       }
     } else {
       if (bi !== undefined) {
         ei = i;
         substr = txt.substr(bi, ei - bi);
-        //acc.push(substr);
         obj[bi] = substr;
         bi = undefined;
       }
