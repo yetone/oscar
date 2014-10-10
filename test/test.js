@@ -20,37 +20,41 @@ describe('utils', function() {
   describe('isStr', function() {
     var func = utils.isStr;
     assert.equal(false, func({}));
+    assert.equal(false, func([]));
     assert.equal(false, func(true));
     assert.equal(false, func(1));
     assert.equal(true, func('sdf'));
-    assert.equal(false, func([]));
+    assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
   });
   describe('isObj', function() {
     var func = utils.isObj;
     assert.equal(true, func({}));
+    assert.equal(false, func([]));
     assert.equal(false, func(true));
     assert.equal(false, func(1));
     assert.equal(false, func('sdf'));
-    assert.equal(false, func([]));
+    assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
   });
   describe('isArray', function() {
     var func = utils.isArray;
     assert.equal(false, func({}));
+    assert.equal(true, func([]));
     assert.equal(false, func(true));
     assert.equal(false, func(1));
     assert.equal(false, func('sdf'));
-    assert.equal(true, func([]));
+    assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
   });
   describe('isFunction', function() {
     var func = utils.isFunction;
     assert.equal(false, func({}));
+    assert.equal(false, func([]));
     assert.equal(false, func(true));
     assert.equal(false, func(1));
     assert.equal(false, func('sdf'));
-    assert.equal(false, func([]));
+    assert.equal(false, func(/[a-z]/));
     assert.equal(true, func(function() {}));
   });
   describe('toArray', function() {
@@ -88,5 +92,15 @@ describe('utils', function() {
     assert.equal('hello.ioi', arr[2]);
     assert.equal('32', arr[3]);
     assert.equal('yoo.xxx.iui.opop.34.cvcv', arr[4]);
+  });
+  describe('getType', function() {
+    var func = utils.getType;
+    assert.equal('Object', func({}));
+    assert.equal('Array', func([]));
+    assert.equal('Boolean', func(true));
+    assert.equal('Number', func(1));
+    assert.equal('String', func('sdf'));
+    assert.equal('RegExp', func(/[a-z]/));
+    assert.equal('Function', func(function() {}));
   });
 });

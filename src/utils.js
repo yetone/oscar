@@ -367,6 +367,10 @@ function _bind(model, obj, attr, scope) {
   }
 }
 
+function getType(obj) {
+  return objProto.toString.call(obj).slice(8, -1);
+}
+
 var WIN = getWindow();
 
 module.exports = {
@@ -399,6 +403,7 @@ module.exports = {
   runWithEvent: runWithEvent,
   getWindow: getWindow,
   _bind: _bind,
+  getType: getType,
   WIN: WIN,
   DOC: WIN.document
 };
