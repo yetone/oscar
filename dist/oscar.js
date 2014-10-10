@@ -711,51 +711,52 @@ var arrProto = window.Array.prototype,
   }
   if (!isArray) {
     isArray = function(obj) {
-      try {
-        return typeof obj === 'object' && toArray(obj).length === obj.length;
-      } catch(e) {
-        return false;
-      }
+      return getType(obj) === 'Array';
     };
   }
 })();
-arrProto.has = function(obj) {
-  return this.indexOf(obj) !== -1;
-};
-arrProto.add = function(obj) {
-  if (!this.has(obj)) {
-    this.push(obj);
-  }
-  return this;
-};
-arrProto.remove = function(obj, all) {
-  var idx,
-    self = this,
-    remove = function() {
-      idx = self.indexOf(obj);
-      self.splice(idx, 1);
-    };
-  if (!self.has(obj)) {
-    return self;
-  }
-  if (all === true) {
-    while (self.has(obj)) {
-      remove();
+
+if (!isFunction(arrProto.has)) {
+  arrProto.has = function(obj) {
+    return this.indexOf(obj) !== -1;
+  };
+  arrProto.add = function(obj) {
+    if (!this.has(obj)) {
+      this.push(obj);
     }
-    return self;
-  } else {
-    remove();
-    return self;
-  }
-};
-strProto.splice = function(start, length, replacement) {
-  return this.substr(0, start) + replacement + this.substr(start + length);
-};
-objProto.extend = function(obj) {
-  for (var k in obj) {
-    this[k] = obj[k];
-  }
-};
+    return this;
+  };
+  arrProto.remove = function(obj, all) {
+    var idx,
+      self = this,
+      remove = function() {
+        idx = self.indexOf(obj);
+        self.splice(idx, 1);
+      };
+    if (!self.has(obj)) {
+      return self;
+    }
+    if (all === true) {
+      while (self.has(obj)) {
+        remove();
+      }
+      return self;
+    } else {
+      remove();
+      return self;
+    }
+  };
+  strProto.splice = function(start, length, replacement) {
+    replacement = replacement || '';
+    return this.substr(0, start) + replacement + this.substr(start + length);
+  };
+  objProto.extend = function(obj) {
+    for (var k in obj) {
+      this[k] = obj[k];
+    }
+  };
+}
+
 function underAttribute($node, attr) {
   if ($node.parentElement.hasAttribute(attr)) return true;
   if ($node.tagName === 'BODY') {
@@ -764,26 +765,19 @@ function underAttribute($node, attr) {
     return underAttribute($node.parentNode, attr);
   }
 }
+
+function getType(obj) {
+  return objProto.toString.call(obj).slice(8, -1);
+}
+
 function isObj(obj) {
-  try {
-    return obj && obj.constructor === window.Object;
-  } catch(e) {
-    return typeof obj === 'object' && !isArray(obj);
-  }
+  return getType(obj) === 'Object';
 }
 function isFunction(obj) {
-  try {
-    return obj && obj.constructor === window.Function;
-  } catch(e) {
-    return typeof obj === 'function';
-  }
+  return getType(obj) === 'Function';
 }
 function isStr(obj) {
-  try {
-    return obj && obj.constructor === window.String;
-  } catch(e) {
-    return typeof obj === 'string';
-  }
+  return getType(obj) === 'String';
 }
 function toArray(obj) {
   return arrProto.slice.call(obj);
@@ -1014,10 +1008,6 @@ function _bind(model, obj, attr, scope) {
   }
 }
 
-function getType(obj) {
-  return objProto.toString.call(obj).slice(8, -1);
-}
-
 var WIN = getWindow();
 
 module.exports = {
@@ -1032,11 +1022,15 @@ module.exports = {
   defs: defs,
   getObjKeys: getObjKeys,
 
+  getType: getType,
   isObj: isObj,
   isArray: isArray,
   isFunction: isFunction,
   isStr: isStr,
+
   toArray: toArray,
+  range: range,
+
   getEvalString: getEvalString,
   parseEvalStr: parseEvalStr,
   replaceEvalStr: replaceEvalStr,
@@ -1045,12 +1039,14 @@ module.exports = {
   genS: genS,
   getBind: getBind,
   getEventType: getEventType,
-  _extends: _extends,
+
   runWithScope: runWithScope,
   runWithEvent: runWithEvent,
-  getWindow: getWindow,
+
   _bind: _bind,
-  getType: getType,
+  _extends: _extends,
+  getWindow: getWindow,
+
   WIN: WIN,
   DOC: WIN.document
 };
