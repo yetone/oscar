@@ -1,11 +1,13 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);throw new Error("Cannot find module '"+o+"'")}var f=n[o]={exports:{}};t[o][0].call(f.exports,function(e){var n=t[o][1][e];return s(n?n:e)},f,f.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+var undefined;
 module.exports = {
   PREFIX: 'oscar-'
 };
 },{}],2:[function(require,module,exports){
 var Model = require('./libs/model').Model,
     Store = require('./libs/store').Store,
-    utils = require('./utils');
+    utils = require('./utils'),
+    undefined;
 
 (function(window, undefined) {
   window.Oscar = (function() {
@@ -133,6 +135,7 @@ var actionDirective = require('./directives/action');
 var classDirective = require('./directives/class');
 var utils = require('../utils');
 var DOC = utils.DOC;
+var undefined;
 
 var compile = function(model, $node, scope) {
   $node = $node || model.$el;
@@ -184,6 +187,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
@@ -202,6 +206,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
@@ -265,6 +270,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
@@ -288,6 +294,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
@@ -409,6 +416,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../../utils');
+var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
@@ -450,6 +458,7 @@ var config = require('../config');
 var observer = require('./observer');
 var compiler = require('./compiler');
 var utils = require('../utils');
+var undefined;
 
 var Model = (function(_super) {
   utils._extends(Model, _super);
@@ -496,6 +505,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../utils');
+var undefined;
 
 var Observer = (function() {
   function Observer() {
@@ -557,6 +567,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var utils = require('../utils');
+var undefined;
 
 var Store = (function() {
   function Store() {
@@ -634,6 +645,16 @@ module.exports = {
 };
 
 },{"../utils":12}],12:[function(require,module,exports){
+// for mocha
+try {
+  window;
+} catch(e) {
+  window = getWindow();
+  if (!window.Event) {
+    window.Event = function() {};
+    window.Element = function() {};
+  }
+}
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
@@ -644,7 +665,8 @@ var arrProto = window.Array.prototype,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
-    isArray = window.Array.isArray;
+    isArray = window.Array.isArray,
+    undefined;
 // 补丁，为了某些浏览器
 (function() {
   if (!elProto.addEventListener) {
@@ -819,7 +841,7 @@ function parseEvalStr(txt) {
     str;
   for (var i = 0, l = txt.length; i < l; i++) {
     var c = txt.charAt(i),
-      substr;
+        substr;
     if (squoteCount + dquoteCount === 0) {
       if (/[a-zA-Z0-9_$]/.test(c)) {
         if (bi === undefined) {
@@ -924,7 +946,7 @@ function genPath(base, k) {
 }
 function genS(str) {
   var strl = str.split('.'),
-    s = '';
+      s = '';
   for (var x in strl) {
     if (!strl.hasOwnProperty(x)) continue;
     s += '[\'' + strl[x] + '\']';
