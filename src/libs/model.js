@@ -21,19 +21,19 @@ var Model = (function(_super) {
   var proto = Model.prototype;
   proto.getBindValues = function(txt) {
     var m = txt.match(/\{\{.*?\}\}/g),
-      bvs = [],
-      pl;
+        bvs = [],
+        pl;
     if (!m) return bvs;
     m.forEach(function(str) {
       str = str.substr(2, str.length - 4).trim();
       pl = utils.parseEvalStr(str).strL;
-      pl.forEach(function(v){
+      pl.forEach(function(v) {
         bvs.add(v);
         var lst = v.split('.');
-        for(var i = 1; i < lst.length; i++){
+        for (var i = 1; i < lst.length; i++) {
           bvs.add(lst.slice(0, -i).join('.'));
         }
-      })
+      });
     });
     return bvs;
   };
