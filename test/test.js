@@ -63,6 +63,7 @@ describe('utils', function() {
     assert.equal('RegExp', func(/[a-z]/));
     assert.equal('Function', func(function() {}));
     assert.equal('Number', func(NaN));
+    assert.equal('Number', func(Infinity));
     assert.equal('Null', func(null));
     assert.equal('Undefined', func(undefined));
   });
@@ -76,6 +77,7 @@ describe('utils', function() {
     assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
     assert.equal(false, func(NaN));
+    assert.equal(false, func(Infinity));
     assert.equal(false, func(null));
     assert.equal(false, func(undefined));
   });
@@ -89,6 +91,7 @@ describe('utils', function() {
     assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
     assert.equal(false, func(NaN));
+    assert.equal(false, func(Infinity));
     assert.equal(false, func(null));
     assert.equal(false, func(undefined));
   });
@@ -102,6 +105,7 @@ describe('utils', function() {
     assert.equal(false, func(/[a-z]/));
     assert.equal(false, func(function() {}));
     assert.equal(false, func(NaN));
+    assert.equal(false, func(Infinity));
     assert.equal(false, func(null));
     assert.equal(false, func(undefined));
   });
@@ -115,6 +119,7 @@ describe('utils', function() {
     assert.equal(false, func(/[a-z]/));
     assert.equal(true, func(function() {}));
     assert.equal(false, func(NaN));
+    assert.equal(false, func(Infinity));
     assert.equal(false, func(null));
     assert.equal(false, func(undefined));
   });
