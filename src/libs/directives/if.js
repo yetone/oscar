@@ -29,7 +29,7 @@ module.exports = {
         $tmp = $node;
         removed = false;
       } else {
-        $node.remove();
+        utils.removeElement($node);
         removed = true;
       }
     });

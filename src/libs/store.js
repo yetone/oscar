@@ -28,7 +28,7 @@ var Store = (function() {
     if (!c || c.removed) return undefined;
     return c.value;
   };
-  proto.delete = function(k) {
+  proto.remove = function(k) {
     var self = this,
       c = self.__c__[k];
     if (!c) return false;

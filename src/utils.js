@@ -1,4 +1,8 @@
-window = getWindow();
+try {
+  window;
+} catch(e) {
+  window = getWindow();
+}
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
@@ -9,38 +13,174 @@ var arrProto = window.Array.prototype,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
     isIE = !+'\v1',
+    shims = require('./libs/shims'),
+    $DOC = window.document,
     undefined;
 // 补丁，为了某些浏览器
 (function() {
-  if (!def) {
-    def = function(obj, prop, desc) {
-      if ('__defineGetter__' in obj) {
+  try {
+    def({}, 'test', {
+      value: 'test'
+    });
+  } catch(e) {
+    if ('__defineGetter__' in objProto) {
+      def = function(obj, prop, desc) {
         if ('value' in desc) {
           obj[prop] = desc.value;
         }
         if ('get' in desc) {
-          obj.__defineGetter__(prop, desc.get);
+          objProto.__defineGetter__.call(obj, prop, desc.get);
         }
         if ('set' in desc) {
-          obj.__defineSetter__(prop, desc.set);
+          objProto.__defineSetter__.call(obj, prop, desc.set);
         }
         return obj;
+      };
+      defs = function(obj, properties) {
+        var name;
+        for (name in properties) {
+          if (hasProp.call(properties, name)) {
+            def(obj, name, properties[name]);
+          }
+        }
+        return obj;
+      };
+    // IE6-8 使用 VBScript 类的 set get 语句实现. from 司徒正美
+    } else if (window.VBArray) {
+      defs = shims.getIEDefineProperties();
+    }
+  }
+
+  // 其他的补丁, 为了伟大的 IE
+  if (!arrProto.indexOf) {
+    arrProto.indexOf = function(searchElement, fromIndex) {
+      var k;
+      if (this == null) {
+        throw new TypeError('"this" is null or not defined');
       }
+
+      var O = Object(this);
+      var len = O.length >>> 0;
+      if (len === 0) {
+        return -1;
+      }
+
+      var n = +fromIndex || 0;
+      if (Math.abs(n) === Infinity) {
+        n = 0;
+      }
+      if (n >= len) {
+        return -1;
+      }
+
+      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+
+      while (k < len) {
+        if (k in O && O[k] === searchElement) {
+          return k;
+        }
+        k++;
+      }
+      return -1;
     };
-    defs = function(obj, descs) {
-      for (var prop in descs) {
-        if (!descs.hasOwnProperty(prop)) continue;
-        def(obj, prop, descs[prop]);
+  }
+  if (!arrProto.forEach) {
+    arrProto.forEach = function(cbk) {
+      for (var i = 0, l = this.length; i < l; i++) {
+        cbk.call(cbk, this[i], i);
       }
     };
   }
+  if (!arrProto.filter) {
+    arrProto.filter = function(fun/*, thisArg*/) {
+
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (typeof fun !== 'function') {
+        throw new TypeError();
+      }
+
+      var res = [];
+      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+      for (var i = 0; i < len; i++) {
+        if (i in t) {
+          var val = t[i];
+
+          if (fun.call(thisArg, val, i, t)) {
+            res.push(val);
+          }
+        }
+      }
+
+      return res;
+    };
+  }
+  if (!$DOC.contains) {
+    function fixContains(a, b) {
+      if (b) {
+        while ((b = b.parentNode)) {
+          if (b === a) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    $DOC.contains = function(b) {
+      return fixContains($DOC, b);
+    }
+  }
+
   if (!isArray) {
     isArray = function(obj) {
       return getType(obj) === 'Array';
     };
   }
 
-  // 其他的补丁, 为了伟大的 IE
+  if (!getObjKeys) {
+    getObjKeys = (function() {
+      var hasOwnProperty = Object.prototype.hasOwnProperty,
+        hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+        dontEnums = [
+          'toString',
+          'toLocaleString',
+          'valueOf',
+          'hasOwnProperty',
+          'isPrototypeOf',
+          'propertyIsEnumerable',
+          'constructor'
+        ],
+        dontEnumsLength = dontEnums.length;
+
+      return function(obj) {
+        if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
+          throw new TypeError('Object.keys called on non-object');
+        }
+
+        var result = [], prop, i;
+
+        for (prop in obj) {
+          if (hasOwnProperty.call(obj, prop)) {
+            result.push(prop);
+          }
+        }
+
+        if (hasDontEnumBug) {
+          for (i = 0; i < dontEnumsLength; i++) {
+            if (hasOwnProperty.call(obj, dontEnums[i])) {
+              result.push(dontEnums[i]);
+            }
+          }
+        }
+        return result;
+      };
+    }());
+  }
+
 })();
 
 if (!isFunction(arrProto.has)) {
@@ -95,23 +235,46 @@ function addEventListener($el, type, listener) {
     }
   }
   if ($el.addEventListener) {
-    $el.addEventListener(type, listener);
-  } else if ($el.attachEvent) {
-    $el.attachEvent('on' + type, wrapper);
-  } else {
-    $el['on' + type] = function() {
-      wrapper(window.event);
-    }
+    return $el.addEventListener(type, listener);
   }
+  if ($el.attachEvent) {
+    return $el.attachEvent('on' + type, wrapper);
+  }
+  return $el['on' + type] = function() {
+    wrapper(window.event);
+  };
 }
 function removeEventListener($el, type, listener) {
   if ($el.removeEventListener) {
-    $el.removeEventListener(type, listener);
-  } else if ($el.detachEvent) {
-    $el.detachEvent('on' + type, listener);
-  } else {
-    $el['on' + type] = null;
+    return $el.removeEventListener(type, listener);
   }
+  if ($el.detachEvent) {
+    return $el.detachEvent('on' + type, listener);
+  }
+  return $el['on' + type] = null;
+}
+function removeElement($el) {
+  if ($el.remove) {
+    return $el.remove();
+  }
+  if ($el.parentNode) {
+    return $el.parentNode.removeChild($el);
+  }
+}
+
+function querySelectorAll($el, selector) {
+  if ($el.querySelectorAll) {
+    return $el.querySelectorAll(selector);
+  }
+  // TODO
+  return [$el.getElementById(selector.slice(1))];
+}
+
+function hasAttribute($el, attr) {
+  if ($el.hasAttribute) {
+    return $el.hasAttribute(attr);
+  }
+  return $el[attr] !== undefined;
 }
 
 function underAttribute($node, attr) {
@@ -137,7 +300,19 @@ function isStr(obj) {
   return getType(obj) === 'String';
 }
 function toArray(obj) {
-  return arrProto.slice.call(obj);
+  try {
+    return arrProto.slice.call(obj);
+  } catch(e) {
+    // 万恶的 IE
+    var arr = [],
+        name;
+    for (name in obj) {
+      if (!hasProp.call(obj, name)) continue;
+      if (!isNaN(+name)) continue;
+      arr[+name] = obj[name];
+    }
+    return arr;
+  }
 }
 function range(s, e, d) {
   d = d || 1;
@@ -403,7 +578,10 @@ module.exports = {
   isIE: isIE,
   addEventListener: addEventListener,
   removeEventListener: removeEventListener,
+  removeElement: removeElement,
+  querySelectorAll: querySelectorAll,
+  hasAttribute: hasAttribute,
 
   WIN: window,
-  DOC: window.document
+  $DOC: $DOC
 };

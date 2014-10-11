@@ -15,7 +15,7 @@ var Model = require('./libs/model').Model,
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
         throw new Error('invalid model type');
       }
-      var $els = window.document.querySelectorAll(obj.el);
+      var $els = utils.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
@@ -40,4 +40,4 @@ var Model = require('./libs/model').Model,
     };
     return Oscar;
   })();
-})((new Function('return this;'))());
+})(utils.WIN);

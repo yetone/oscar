@@ -21,7 +21,7 @@ module.exports = {
       if (utils.isObj(dv)) {
         obj = utils.getObjKeys(dv);
       }
-      $node.remove();
+      utils.removeElement($node);
       obj.forEach(function(v, k) {
         if (utils.isObj(dv) && v === '__c__') return;
         var $node,
@@ -52,7 +52,7 @@ module.exports = {
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;
-              if ($node.hasAttribute(attr)) {
+              if (utils.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
                 a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
                 a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
@@ -78,7 +78,7 @@ module.exports = {
           });
         }
 
-        if (window.document.contains($node)) return;
+        if (utils.$DOC.contains($node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -105,7 +105,7 @@ module.exports = {
             hasMe = k in dv;
           }
           if (!hasMe) {
-            $node.remove();
+            utils.removeElement($node);
           }
         });
         $node.inited = true;

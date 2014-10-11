@@ -21,7 +21,7 @@ var Model = require('./libs/model').Model,
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
         throw new Error('invalid model type');
       }
-      var $els = window.document.querySelectorAll(obj.el);
+      var $els = utils.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
@@ -46,9 +46,9 @@ var Model = require('./libs/model').Model,
     };
     return Oscar;
   })();
-})((new Function('return this;'))());
+})(utils.WIN);
 
-},{"./libs/builder":3,"./libs/model":10,"./utils":13}],3:[function(require,module,exports){
+},{"./libs/builder":3,"./libs/model":10,"./utils":14}],3:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -135,7 +135,7 @@ module.exports = {
   buildObj: buildObj
 };
 
-},{"../utils":13,"./store":12}],4:[function(require,module,exports){
+},{"../utils":14,"./store":13}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -145,7 +145,6 @@ var bindDirective = require('./directives/bind');
 var actionDirective = require('./directives/action');
 var classDirective = require('./directives/class');
 var utils = require('../utils');
-var DOC = utils.DOC;
 var undefined;
 
 var compile = function(model, $node, scope) {
@@ -155,11 +154,11 @@ var compile = function(model, $node, scope) {
   if ($node.nodeType === 3) {
     return utils._bind(model, $node, 'textContent', scope);
   }
-  hasBind = $node.hasAttribute(model.prefix + 'bind');
-  hasClass = $node.hasAttribute(model.prefix + 'class');
-  hasAction = $node.hasAttribute(model.prefix + 'action');
-  hasIf = $node.hasAttribute(model.prefix + 'if');
-  hasFor = $node.hasAttribute(model.prefix + 'for');
+  hasBind = utils.hasAttribute($node, model.prefix + 'bind');
+  hasClass = utils.hasAttribute($node, model.prefix + 'class');
+  hasAction = utils.hasAttribute($node, model.prefix + 'action');
+  hasIf = utils.hasAttribute($node, model.prefix + 'if');
+  hasFor = utils.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
     return v.name.indexOf(model.prefix) !== 0;
@@ -183,7 +182,7 @@ var compile = function(model, $node, scope) {
   if (hasIf) {
     ifDirective.compile(model, $node, scope);
   }
-  if (DOC.contains($node)) {
+  if (utils.$DOC.contains($node)) {
     utils.toArray($node.childNodes).forEach(function($node) {
       compile(model, $node);
     });
@@ -193,7 +192,7 @@ var compile = function(model, $node, scope) {
 module.exports = {
   compile: compile
 };
-},{"../utils":13,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9}],5:[function(require,module,exports){
+},{"../utils":14,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9}],5:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -212,7 +211,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":13}],6:[function(require,module,exports){
+},{"../../utils":14}],6:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -276,7 +275,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":13}],7:[function(require,module,exports){
+},{"../../utils":14}],7:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -300,7 +299,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":13}],8:[function(require,module,exports){
+},{"../../utils":14}],8:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -324,7 +323,7 @@ module.exports = {
       if (utils.isObj(dv)) {
         obj = utils.getObjKeys(dv);
       }
-      $node.remove();
+      utils.removeElement($node);
       obj.forEach(function(v, k) {
         if (utils.isObj(dv) && v === '__c__') return;
         var $node,
@@ -355,7 +354,7 @@ module.exports = {
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;
-              if ($node.hasAttribute(attr)) {
+              if (utils.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
                 a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
                 a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
@@ -381,7 +380,7 @@ module.exports = {
           });
         }
 
-        if (window.document.contains($node)) return;
+        if (utils.$DOC.contains($node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -408,7 +407,7 @@ module.exports = {
             hasMe = k in dv;
           }
           if (!hasMe) {
-            $node.remove();
+            utils.removeElement($node);
           }
         });
         $node.inited = true;
@@ -422,7 +421,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":13}],9:[function(require,module,exports){
+},{"../../utils":14}],9:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -454,14 +453,14 @@ module.exports = {
         $tmp = $node;
         removed = false;
       } else {
-        $node.remove();
+        utils.removeElement($node);
         removed = true;
       }
     });
   }
 };
 
-},{"../../utils":13}],10:[function(require,module,exports){
+},{"../../utils":14}],10:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -511,7 +510,7 @@ module.exports = {
   Model: Model
 };
 
-},{"../config":1,"../utils":13,"./compiler":4,"./observer":11}],11:[function(require,module,exports){
+},{"../config":1,"../utils":14,"./compiler":4,"./observer":11}],11:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -573,7 +572,107 @@ module.exports = {
   Observer: Observer
 };
 
-},{"../utils":13}],12:[function(require,module,exports){
+},{"../utils":14}],12:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-11.
+ */
+var expose = new Date - 0;
+
+function getIEDefineProperties() {
+  //IE6-8使用VBScript类的set get语句实现. from 司徒正美
+  window.execScript([
+    "Function parseVB(code)",
+    "\tExecuteGlobal(code)",
+    "End Function",
+    "Dim VBClassBodies",
+    "Set VBClassBodies=CreateObject(\"Scripting.Dictionary\")",
+    "Function findOrDefineVBClass(name,body)",
+    "\tDim found",
+    "\tfound=\"\"",
+    "\tFor Each key in VBClassBodies",
+    "\t\tIf body=VBClassBodies.Item(key) Then",
+    "\t\t\tfound=key",
+    "\t\t\tExit For",
+    "\t\tEnd If",
+    "\tnext",
+    "\tIf found=\"\" Then",
+    "\t\tparseVB(\"Class \" + name + body)",
+    "\t\tVBClassBodies.Add name, body",
+    "\t\tfound=name",
+    "\tEnd If",
+    "\tfindOrDefineVBClass=found",
+    "End Function"
+  ].join("\n"), "VBScript");
+
+  function VBMediator(accessingProperties, name, value) {
+    var accessor = accessingProperties[name];
+    if (typeof accessor === "function") {
+      if (arguments.length === 3) {
+        accessor(value)
+      } else {
+        return accessor()
+      }
+    }
+  }
+  return function(name, accessors, properties) {
+    var className = "VBClass" + setTimeout("1"),
+      buffer = [];
+    buffer.push(
+      "\r\n\tPrivate [__data__], [__proxy__]",
+      "\tPublic Default Function [__const__](d, p)",
+      "\t\tSet [__data__] = d: set [__proxy__] = p",
+      "\t\tSet [__const__] = Me", //链式调用
+      "\tEnd Function");
+    //添加普通属性,因为VBScript对象不能像JS那样随意增删属性，必须在这里预先定义好
+    for (name in properties) {
+      if (!accessors.hasOwnProperty(name)) {
+        buffer.push("\tPublic [" + name + "]");
+      }
+    }
+    buffer.push("\tPublic [" + 'hasOwnProperty' + "]");
+    //添加访问器属性
+    for (name in accessors) {
+      buffer.push(
+        //由于不知对方会传入什么,因此set, let都用上
+          "\tPublic Property Let [" + name + "](val" + expose + ")", //setter
+          "\t\tCall [__proxy__]([__data__], \"" + name + "\", val" + expose + ")",
+        "\tEnd Property",
+          "\tPublic Property Set [" + name + "](val" + expose + ")", //setter
+          "\t\tCall [__proxy__]([__data__], \"" + name + "\", val" + expose + ")",
+        "\tEnd Property",
+          "\tPublic Property Get [" + name + "]", //getter
+        "\tOn Error Resume Next", //必须优先使用set语句,否则它会误将数组当字符串返回
+          "\t\tSet[" + name + "] = [__proxy__]([__data__],\"" + name + "\")",
+        "\tIf Err.Number <> 0 Then",
+          "\t\t[" + name + "] = [__proxy__]([__data__],\"" + name + "\")",
+        "\tEnd If",
+        "\tOn Error Goto 0",
+        "\tEnd Property");
+
+    }
+
+    buffer.push("End Class");
+    var code = buffer.join("\r\n"),
+      realClassName = window['findOrDefineVBClass'](className, code); //如果该VB类已定义，返回类名。否则用className创建一个新类。
+    if (realClassName === className) {
+      window.parseVB([
+          "Function " + className + "Factory(a, b)", //创建实例并传入两个关键的参数
+        "\tDim o",
+          "\tSet o = (New " + className + ")(a, b)",
+          "\tSet " + className + "Factory = o",
+        "End Function"
+      ].join("\r\n"))
+    }
+    var ret = window[realClassName + "Factory"](accessors, VBMediator); //得到其产品
+    return ret; //得到其产品
+  }
+}
+
+module.exports = {
+  getIEDefineProperties: getIEDefineProperties
+};
+
+},{}],13:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -604,7 +703,7 @@ var Store = (function() {
     if (!c || c.removed) return undefined;
     return c.value;
   };
-  proto.delete = function(k) {
+  proto.remove = function(k) {
     var self = this,
       c = self.__c__[k];
     if (!c) return false;
@@ -655,8 +754,12 @@ module.exports = {
   Store: Store
 };
 
-},{"../utils":13}],13:[function(require,module,exports){
-window = getWindow();
+},{"../utils":14}],14:[function(require,module,exports){
+try {
+  window;
+} catch(e) {
+  window = getWindow();
+}
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
@@ -667,38 +770,174 @@ var arrProto = window.Array.prototype,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
     isIE = !+'\v1',
+    shims = require('./libs/shims'),
+    $DOC = window.document,
     undefined;
 // 补丁，为了某些浏览器
 (function() {
-  if (!def) {
-    def = function(obj, prop, desc) {
-      if ('__defineGetter__' in obj) {
+  try {
+    def({}, 'test', {
+      value: 'test'
+    });
+  } catch(e) {
+    if ('__defineGetter__' in objProto) {
+      def = function(obj, prop, desc) {
         if ('value' in desc) {
           obj[prop] = desc.value;
         }
         if ('get' in desc) {
-          obj.__defineGetter__(prop, desc.get);
+          objProto.__defineGetter__.call(obj, prop, desc.get);
         }
         if ('set' in desc) {
-          obj.__defineSetter__(prop, desc.set);
+          objProto.__defineSetter__.call(obj, prop, desc.set);
         }
         return obj;
+      };
+      defs = function(obj, properties) {
+        var name;
+        for (name in properties) {
+          if (hasProp.call(properties, name)) {
+            def(obj, name, properties[name]);
+          }
+        }
+        return obj;
+      };
+    // IE6-8 使用 VBScript 类的 set get 语句实现. from 司徒正美
+    } else if (window.VBArray) {
+      defs = shims.getIEDefineProperties();
+    }
+  }
+
+  // 其他的补丁, 为了伟大的 IE
+  if (!arrProto.indexOf) {
+    arrProto.indexOf = function(searchElement, fromIndex) {
+      var k;
+      if (this == null) {
+        throw new TypeError('"this" is null or not defined');
       }
+
+      var O = Object(this);
+      var len = O.length >>> 0;
+      if (len === 0) {
+        return -1;
+      }
+
+      var n = +fromIndex || 0;
+      if (Math.abs(n) === Infinity) {
+        n = 0;
+      }
+      if (n >= len) {
+        return -1;
+      }
+
+      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+
+      while (k < len) {
+        if (k in O && O[k] === searchElement) {
+          return k;
+        }
+        k++;
+      }
+      return -1;
     };
-    defs = function(obj, descs) {
-      for (var prop in descs) {
-        if (!descs.hasOwnProperty(prop)) continue;
-        def(obj, prop, descs[prop]);
+  }
+  if (!arrProto.forEach) {
+    arrProto.forEach = function(cbk) {
+      for (var i = 0, l = this.length; i < l; i++) {
+        cbk.call(cbk, this[i], i);
       }
     };
   }
+  if (!arrProto.filter) {
+    arrProto.filter = function(fun/*, thisArg*/) {
+
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (typeof fun !== 'function') {
+        throw new TypeError();
+      }
+
+      var res = [];
+      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+      for (var i = 0; i < len; i++) {
+        if (i in t) {
+          var val = t[i];
+
+          if (fun.call(thisArg, val, i, t)) {
+            res.push(val);
+          }
+        }
+      }
+
+      return res;
+    };
+  }
+  if (!$DOC.contains) {
+    function fixContains(a, b) {
+      if (b) {
+        while ((b = b.parentNode)) {
+          if (b === a) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    $DOC.contains = function(b) {
+      return fixContains($DOC, b);
+    }
+  }
+
   if (!isArray) {
     isArray = function(obj) {
       return getType(obj) === 'Array';
     };
   }
 
-  // 其他的补丁, 为了伟大的 IE
+  if (!getObjKeys) {
+    getObjKeys = (function() {
+      var hasOwnProperty = Object.prototype.hasOwnProperty,
+        hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+        dontEnums = [
+          'toString',
+          'toLocaleString',
+          'valueOf',
+          'hasOwnProperty',
+          'isPrototypeOf',
+          'propertyIsEnumerable',
+          'constructor'
+        ],
+        dontEnumsLength = dontEnums.length;
+
+      return function(obj) {
+        if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
+          throw new TypeError('Object.keys called on non-object');
+        }
+
+        var result = [], prop, i;
+
+        for (prop in obj) {
+          if (hasOwnProperty.call(obj, prop)) {
+            result.push(prop);
+          }
+        }
+
+        if (hasDontEnumBug) {
+          for (i = 0; i < dontEnumsLength; i++) {
+            if (hasOwnProperty.call(obj, dontEnums[i])) {
+              result.push(dontEnums[i]);
+            }
+          }
+        }
+        return result;
+      };
+    }());
+  }
+
 })();
 
 if (!isFunction(arrProto.has)) {
@@ -753,23 +992,46 @@ function addEventListener($el, type, listener) {
     }
   }
   if ($el.addEventListener) {
-    $el.addEventListener(type, listener);
-  } else if ($el.attachEvent) {
-    $el.attachEvent('on' + type, wrapper);
-  } else {
-    $el['on' + type] = function() {
-      wrapper(window.event);
-    }
+    return $el.addEventListener(type, listener);
   }
+  if ($el.attachEvent) {
+    return $el.attachEvent('on' + type, wrapper);
+  }
+  return $el['on' + type] = function() {
+    wrapper(window.event);
+  };
 }
 function removeEventListener($el, type, listener) {
   if ($el.removeEventListener) {
-    $el.removeEventListener(type, listener);
-  } else if ($el.detachEvent) {
-    $el.detachEvent('on' + type, listener);
-  } else {
-    $el['on' + type] = null;
+    return $el.removeEventListener(type, listener);
   }
+  if ($el.detachEvent) {
+    return $el.detachEvent('on' + type, listener);
+  }
+  return $el['on' + type] = null;
+}
+function removeElement($el) {
+  if ($el.remove) {
+    return $el.remove();
+  }
+  if ($el.parentNode) {
+    return $el.parentNode.removeChild($el);
+  }
+}
+
+function querySelectorAll($el, selector) {
+  if ($el.querySelectorAll) {
+    return $el.querySelectorAll(selector);
+  }
+  // TODO
+  return [$el.getElementById(selector.slice(1))];
+}
+
+function hasAttribute($el, attr) {
+  if ($el.hasAttribute) {
+    return $el.hasAttribute(attr);
+  }
+  return $el[attr] !== undefined;
 }
 
 function underAttribute($node, attr) {
@@ -795,7 +1057,19 @@ function isStr(obj) {
   return getType(obj) === 'String';
 }
 function toArray(obj) {
-  return arrProto.slice.call(obj);
+  try {
+    return arrProto.slice.call(obj);
+  } catch(e) {
+    // 万恶的 IE
+    var arr = [],
+        name;
+    for (name in obj) {
+      if (!hasProp.call(obj, name)) continue;
+      if (!isNaN(+name)) continue;
+      arr[+name] = obj[name];
+    }
+    return arr;
+  }
 }
 function range(s, e, d) {
   d = d || 1;
@@ -1061,9 +1335,12 @@ module.exports = {
   isIE: isIE,
   addEventListener: addEventListener,
   removeEventListener: removeEventListener,
+  removeElement: removeElement,
+  querySelectorAll: querySelectorAll,
+  hasAttribute: hasAttribute,
 
   WIN: window,
-  DOC: window.document
+  $DOC: $DOC
 };
 
-},{}]},{},[2])
+},{"./libs/shims":12}]},{},[2])
