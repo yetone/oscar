@@ -9,7 +9,7 @@ module.exports = {
     var oact = $node.getAttribute(model.prefix + 'action'),
         acl = /(\w+):(.*)/g.exec(oact);
     if (acl.length === 3) {
-      $node.addEventListener(acl[1], function(e) {
+      utils.addEventListener($node, acl[1], function(e) {
         utils.runWithEvent(acl[2], scope, this, e);
       });
     }

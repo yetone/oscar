@@ -1,45 +1,17 @@
-// for mocha
-try {
-  window;
-} catch(e) {
-  window = getWindow();
-  if (!window.Event) {
-    window.Event = function() {};
-    window.Element = function() {};
-  }
-}
+window = getWindow();
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
-    eventProto = window.Event.prototype,
-    elProto = window.Element.prototype,
     hasProp = ({}).hasOwnProperty,
     forEach = arrProto.forEach,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
+    isIE = !+'\v1',
     undefined;
 // 补丁，为了某些浏览器
 (function() {
-  if (!elProto.addEventListener) {
-    elProto.addEventListener = function(type, listener) {
-      var self = this,
-        wrapper = function(e) {
-          e.target = e.srcElement;
-          e.currentTarget = self;
-          if (listener.handleEvent) {
-            listener.handleEvent(e);
-          } else {
-            listener.call(self, e);
-          }
-        };
-      self.attachEvent('on' + type, wrapper);
-    };
-    elProto.removeEventListener = function(type, listener) {
-      this.detachEvent('on' + type, listener);
-    }
-  }
   if (!def) {
     def = function(obj, prop, desc) {
       if ('__defineGetter__' in obj) {
@@ -67,6 +39,8 @@ var arrProto = window.Array.prototype,
       return getType(obj) === 'Array';
     };
   }
+
+  // 其他的补丁, 为了伟大的 IE
 })();
 
 if (!isFunction(arrProto.has)) {
@@ -108,6 +82,36 @@ if (!isFunction(arrProto.has)) {
       this[k] = obj[k];
     }
   };
+}
+
+function addEventListener($el, type, listener) {
+  function wrapper(e) {
+    e.target = e.srcElement;
+    e.currentTarget = $el;
+    if (listener.handleEvent) {
+      listener.handleEvent(e);
+    } else {
+      listener.call($el, e);
+    }
+  }
+  if ($el.addEventListener) {
+    $el.addEventListener(type, listener);
+  } else if ($el.attachEvent) {
+    $el.attachEvent('on' + type, wrapper);
+  } else {
+    $el['on' + type] = function() {
+      wrapper(window.event);
+    }
+  }
+}
+function removeEventListener($el, type, listener) {
+  if ($el.removeEventListener) {
+    $el.removeEventListener(type, listener);
+  } else if ($el.detachEvent) {
+    $el.detachEvent('on' + type, listener);
+  } else {
+    $el['on' + type] = null;
+  }
 }
 
 function underAttribute($node, attr) {
@@ -361,14 +365,10 @@ function _bind(model, obj, attr, scope) {
   }
 }
 
-var WIN = getWindow();
-
 module.exports = {
   arrProto: arrProto,
   strProto: strProto,
   objProto: objProto,
-  eventProto: eventProto,
-  elProto: elProto,
   hasProp: hasProp,
   forEach: forEach,
   def: def,
@@ -400,6 +400,10 @@ module.exports = {
   _extends: _extends,
   getWindow: getWindow,
 
-  WIN: WIN,
-  DOC: WIN.document
+  isIE: isIE,
+  addEventListener: addEventListener,
+  removeEventListener: removeEventListener,
+
+  WIN: window,
+  DOC: window.document
 };

@@ -20,7 +20,7 @@ module.exports = {
         });
       });
       if (eventType) {
-        $node.addEventListener(eventType, function() {
+        utils.addEventListener($node, eventType, function() {
           var $selectedOpts = utils.toArray($node.selectedOptions),
             acc = [],
             es;
@@ -47,7 +47,7 @@ module.exports = {
         });
       }
       if (eventType) {
-        $node.addEventListener(eventType, function() {
+        utils.addEventListener($node, eventType, function() {
           var es;
           if ($node.type === 'radio') {
             es = '(scope.' + bindValue + ' = this.value)';
