@@ -31,7 +31,7 @@ gulp.task('test', function() {
 
 gulp.task('default', function() {
   gulp.run('lint', 'scripts');
-  gulp.watch('src/**/*.js', function() {
+  gulp.watch(['src/*.js', 'src/**/*.js'], function() {
     gulp.run('lint', 'scripts');
   });
 });

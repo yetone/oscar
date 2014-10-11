@@ -5,9 +5,8 @@ module.exports = {
 };
 },{}],2:[function(require,module,exports){
 var Model = require('./libs/model').Model,
-    Store = require('./libs/store').Store,
-    utils = require('./utils'),
-    undefined;
+    builder = require('./libs/builder'),
+    utils = require('./utils');
 
 (function(window, undefined) {
   window.Oscar = (function() {
@@ -17,81 +16,6 @@ var Model = require('./libs/model').Model,
     }
     var proto = Oscar.prototype;
     proto.__init__ = function() {
-    };
-    proto.buildArray = function(arr, model, root) {
-      root = root || '';
-      var self = this,
-          args;
-      ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
-        arr[method] = function() {
-          var oldL = this.length;
-          args = utils.toArray(arguments);
-          // clone arguments
-          var _args = utils.toArray(arguments);
-          if (method === 'splice') {
-            var subArgs = args.slice(2);
-            self.buildObj([subArgs], model);
-            args = args.slice(0, 2);
-            utils.arrProto.push.apply(args, subArgs);
-          } else {
-            self.buildObj(args, model);
-          }
-          utils.arrProto[method].apply(this, args);
-          this.__c__.apply(method, _args);
-          self.buildObj(this, model, root);
-          if (model !== undefined) {
-            model.trigger('change:' + root);
-            model.trigger('change:*');
-            if (oldL !== this.length) {
-              model.trigger('change:' + utils.genPath(root, '__index__'));
-            }
-          }
-        };
-      });
-      self.buildObj(arr, model, root);
-    };
-    proto.buildObj = function(obj, model, root) {
-      root = root || '';
-      var self = this,
-          properties = {};
-      if (obj.__c__ === undefined || obj.__c__.constructor !== Store) {
-        obj.__c__ = new Store();
-      }
-      utils.getObjKeys(obj).forEach(function(k) {
-        if (k === '__c__') return;
-        if (typeof obj[k] === 'function') return;
-        obj.__c__.set(k, obj[k]);
-        var path = utils.genPath(root, k);
-        if (utils.isArray(obj[k])) {
-          self.buildArray(obj[k], model, path);
-        }
-        if (utils.isObj(obj[k])) {
-          self.buildObj(obj[k], model, path);
-        }
-        properties[k] = {
-          get: function() {
-            return this.__c__.get(k);
-          },
-          set: function(v) {
-            if (utils.isArray(v)) {
-              self.buildArray(v, model, path);
-            }
-            if (utils.isObj(v)) {
-              self.buildObj(v, model, path);
-            }
-            var isNew = (this.__c__.get(k) !== v);
-            this.__c__.set(k, v);
-            if (model !== undefined && isNew) {
-              model.trigger('change:' + path);
-              model.trigger('change:*');
-            }
-          }
-        };
-        if (model !== undefined) {
-          model.trigger('set:' + path);
-        }
-      });
-      utils.defs(obj, properties);
     };
     proto.modelRegister = function(obj) {
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
@@ -108,7 +32,7 @@ var Model = require('./libs/model').Model,
         tpl: $el.innerHTML,
         data: obj.data
       });
-      this.buildObj(model.data, model);
+      builder.buildObj(model.data, model);
       this.modelList.push(model);
       model.render();
       model.inited = true;
@@ -124,7 +48,94 @@ var Model = require('./libs/model').Model,
   })();
 })((new Function('return this;'))());
 
-},{"./libs/model":9,"./libs/store":11,"./utils":12}],3:[function(require,module,exports){
+},{"./libs/builder":3,"./libs/model":10,"./utils":13}],3:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-11.
+ */
+var Store = require('./store').Store;
+var utils = require('../utils');
+var undefined;
+
+function buildArray(arr, model, root) {
+  root = root || '';
+  var args;
+  ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
+    arr[method] = function() {
+      var oldL = this.length;
+      args = utils.toArray(arguments);
+      // clone arguments
+      var _args = utils.toArray(arguments);
+      if (method === 'splice') {
+        var subArgs = args.slice(2);
+        buildObj([subArgs], model);
+        args = args.slice(0, 2);
+        utils.arrProto.push.apply(args, subArgs);
+      } else {
+        buildObj(args, model);
+      }
+      utils.arrProto[method].apply(this, args);
+      this.__c__.apply(method, _args);
+      buildObj(this, model, root);
+      if (model !== undefined) {
+        model.trigger('change:' + root);
+        model.trigger('change:*');
+        if (oldL !== this.length) {
+          model.trigger('change:' + utils.genPath(root, '__index__'));
+        }
+      }
+    };
+  });
+  buildObj(arr, model, root);
+}
+
+function buildObj(obj, model, root) {
+  root = root || '';
+  var properties = {};
+  if (obj.__c__ === undefined || obj.__c__.constructor !== Store) {
+    obj.__c__ = new Store();
+  }
+  utils.getObjKeys(obj).forEach(function(k) {
+    if (k === '__c__') return;
+    if (typeof obj[k] === 'function') return;
+    obj.__c__.set(k, obj[k]);
+    var path = utils.genPath(root, k);
+    if (utils.isArray(obj[k])) {
+      buildArray(obj[k], model, path);
+    }
+    if (utils.isObj(obj[k])) {
+      buildObj(obj[k], model, path);
+    }
+    properties[k] = {
+      get: function() {
+        return this.__c__.get(k);
+      },
+      set: function(v) {
+        if (utils.isArray(v)) {
+          buildArray(v, model, path);
+        }
+        if (utils.isObj(v)) {
+          buildObj(v, model, path);
+        }
+        var isNew = (this.__c__.get(k) !== v);
+        this.__c__.set(k, v);
+        if (model !== undefined && isNew) {
+          model.trigger('change:' + path);
+          model.trigger('change:*');
+        }
+      }
+    };
+    if (model !== undefined) {
+      model.trigger('set:' + path);
+    }
+  });
+  utils.defs(obj, properties);
+}
+
+module.exports = {
+  buildObj: buildObj
+};
+
+},{"../utils":13,"./store":12}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -182,7 +193,7 @@ var compile = function(model, $node, scope) {
 module.exports = {
   compile: compile
 };
-},{"../utils":12,"./directives/action":4,"./directives/bind":5,"./directives/class":6,"./directives/for":7,"./directives/if":8}],4:[function(require,module,exports){
+},{"../utils":13,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9}],5:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -201,7 +212,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":12}],5:[function(require,module,exports){
+},{"../../utils":13}],6:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -265,7 +276,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":12}],6:[function(require,module,exports){
+},{"../../utils":13}],7:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -289,7 +300,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":12}],7:[function(require,module,exports){
+},{"../../utils":13}],8:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -411,7 +422,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":12}],8:[function(require,module,exports){
+},{"../../utils":13}],9:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -450,7 +461,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":12}],9:[function(require,module,exports){
+},{"../../utils":13}],10:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -500,7 +511,7 @@ module.exports = {
   Model: Model
 };
 
-},{"../config":1,"../utils":12,"./compiler":3,"./observer":10}],10:[function(require,module,exports){
+},{"../config":1,"../utils":13,"./compiler":4,"./observer":11}],11:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -562,7 +573,7 @@ module.exports = {
   Observer: Observer
 };
 
-},{"../utils":12}],11:[function(require,module,exports){
+},{"../utils":13}],12:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -644,7 +655,7 @@ module.exports = {
   Store: Store
 };
 
-},{"../utils":12}],12:[function(require,module,exports){
+},{"../utils":13}],13:[function(require,module,exports){
 // for mocha
 try {
   window;
