@@ -11,7 +11,7 @@ var arrProto = window.Array.prototype,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
     isIE = !+'\v1',
-    shims = require('./libs/shims'),
+    helpers = require('./libs/helpers'),
     $DOC = window.document || {},
     undefined;
 // 补丁，为了某些浏览器
@@ -45,7 +45,7 @@ var arrProto = window.Array.prototype,
       };
     // IE6-8 使用 VBScript 类的 set get 语句实现. from 司徒正美
     } else if (window.VBArray) {
-      defs = shims.getIEDefineProperties();
+      defs = helpers.getIEDefineProperties();
     }
   }
 
@@ -138,66 +138,6 @@ if (!isFunction(arrProto.has)) {
   };
 }
 
-// DOM 操作不使用 shim 是因为某些渣渣浏览器无法访问到 Event 和 Element 对象
-function addEventListener($el, type, listener) {
-  function wrapper(e) {
-    e.target = e.srcElement;
-    e.currentTarget = $el;
-    if (listener.handleEvent) {
-      listener.handleEvent(e);
-    } else {
-      listener.call($el, e);
-    }
-  }
-  if ($el.addEventListener) {
-    return $el.addEventListener(type, listener);
-  }
-  if ($el.attachEvent) {
-    return $el.attachEvent('on' + type, wrapper);
-  }
-  return $el['on' + type] = function() {
-    wrapper(window.event);
-  };
-}
-function removeEventListener($el, type, listener) {
-  if ($el.removeEventListener) {
-    return $el.removeEventListener(type, listener);
-  }
-  if ($el.detachEvent) {
-    return $el.detachEvent('on' + type, listener);
-  }
-  return $el['on' + type] = null;
-}
-function removeElement($el) {
-  if ($el.remove) {
-    return $el.remove();
-  }
-  if ($el.parentNode) {
-    return $el.parentNode.removeChild($el);
-  }
-}
-function querySelectorAll($el, selector) {
-  if ($el.querySelectorAll) {
-    return $el.querySelectorAll(selector);
-  }
-  // TODO
-  return [$el.getElementById(selector.slice(1))];
-}
-function hasAttribute($el, attr) {
-  if ($el.hasAttribute) {
-    return $el.hasAttribute(attr);
-  }
-  return $el[attr] !== undefined;
-}
-
-function underAttribute($node, attr) {
-  if ($node.parentElement.hasAttribute(attr)) return true;
-  if ($node.tagName === 'BODY') {
-    return $node.hasAttribute(attr);
-  } else {
-    return underAttribute($node.parentNode, attr);
-  }
-}
 function getType(obj) {
   return objProto.toString.call(obj).slice(8, -1);
 }
@@ -487,11 +427,6 @@ module.exports = {
   getWindow: getWindow,
 
   isIE: isIE,
-  addEventListener: addEventListener,
-  removeEventListener: removeEventListener,
-  removeElement: removeElement,
-  querySelectorAll: querySelectorAll,
-  hasAttribute: hasAttribute,
 
   WIN: window,
   $DOC: $DOC

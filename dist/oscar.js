@@ -6,8 +6,12 @@ module.exports = {
 },{}],2:[function(require,module,exports){
 var Model = require('./libs/model'),
     builder = require('./libs/builder'),
+    shims = require('./libs/shims'),
+    dom = require('./libs/dom'),
     utils = require('./utils');
 
+// do shim
+shims.shim();
 (function(window, undefined) {
   window.Oscar = (function() {
     function Oscar() {
@@ -21,7 +25,7 @@ var Model = require('./libs/model'),
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
         throw new TypeError('invalid model type');
       }
-      var $els = utils.querySelectorAll(utils.$DOC, obj.el);
+      var $els = dom.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
@@ -48,7 +52,7 @@ var Model = require('./libs/model'),
   })();
 })(utils.WIN);
 
-},{"./libs/builder":3,"./libs/model":10,"./utils":14}],3:[function(require,module,exports){
+},{"./libs/builder":3,"./libs/dom":10,"./libs/model":12,"./libs/shims":14,"./utils":16}],3:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -135,7 +139,7 @@ module.exports = {
   buildObj: buildObj
 };
 
-},{"../utils":14,"./store":13}],4:[function(require,module,exports){
+},{"../utils":16,"./store":15}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -144,6 +148,7 @@ var forDirective = require('./directives/for');
 var bindDirective = require('./directives/bind');
 var actionDirective = require('./directives/action');
 var classDirective = require('./directives/class');
+var dom = require('./dom');
 var utils = require('../utils');
 var undefined;
 
@@ -154,11 +159,11 @@ var compile = function(model, $node, scope) {
   if ($node.nodeType === 3) {
     return utils._bind(model, $node, 'textContent', scope);
   }
-  hasBind = utils.hasAttribute($node, model.prefix + 'bind');
-  hasClass = utils.hasAttribute($node, model.prefix + 'class');
-  hasAction = utils.hasAttribute($node, model.prefix + 'action');
-  hasIf = utils.hasAttribute($node, model.prefix + 'if');
-  hasFor = utils.hasAttribute($node, model.prefix + 'for');
+  hasBind = dom.hasAttribute($node, model.prefix + 'bind');
+  hasClass = dom.hasAttribute($node, model.prefix + 'class');
+  hasAction = dom.hasAttribute($node, model.prefix + 'action');
+  hasIf = dom.hasAttribute($node, model.prefix + 'if');
+  hasFor = dom.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
     return v.name.indexOf(model.prefix) !== 0;
@@ -182,7 +187,7 @@ var compile = function(model, $node, scope) {
   if (hasIf) {
     ifDirective.compile(model, $node, scope);
   }
-  if (utils.$DOC.contains($node)) {
+  if (dom.contains(utils.$DOC, $node)) {
     utils.toArray($node.childNodes).forEach(function($node) {
       compile(model, $node);
     });
@@ -192,10 +197,11 @@ var compile = function(model, $node, scope) {
 module.exports = {
   compile: compile
 };
-},{"../utils":14,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9}],5:[function(require,module,exports){
+},{"../utils":16,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9,"./dom":10}],5:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -204,17 +210,18 @@ module.exports = {
     var oact = $node.getAttribute(model.prefix + 'action'),
         acl = /(\w+):(.*)/g.exec(oact);
     if (acl.length === 3) {
-      utils.addEventListener($node, acl[1], function(e) {
+      dom.addEventListener($node, acl[1], function(e) {
         utils.runWithEvent(acl[2], scope, this, e);
       });
     }
   }
 };
 
-},{"../../utils":14}],6:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],6:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -222,7 +229,7 @@ module.exports = {
   compile: function(model, $node, scope) {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
-        multiple = $node.hasAttribute('multiple'),
+        multiple = dom.hasAttribute($node, 'multiple'),
         bindValue = $node.getAttribute(model.prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
@@ -234,7 +241,7 @@ module.exports = {
         });
       });
       if (eventType) {
-        utils.addEventListener($node, eventType, function() {
+        dom.addEventListener($node, eventType, function() {
           var $selectedOpts = utils.toArray($node.selectedOptions),
             acc = [],
             es;
@@ -261,7 +268,7 @@ module.exports = {
         });
       }
       if (eventType) {
-        utils.addEventListener($node, eventType, function() {
+        dom.addEventListener($node, eventType, function() {
           var es;
           if ($node.type === 'radio') {
             es = '(scope.' + bindValue + ' = this.value)';
@@ -275,7 +282,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":14}],7:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],7:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -299,10 +306,11 @@ module.exports = {
   }
 };
 
-},{"../../utils":14}],8:[function(require,module,exports){
+},{"../../utils":16}],8:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -323,7 +331,7 @@ module.exports = {
       if (utils.isObj(dv)) {
         obj = utils.getObjKeys(dv);
       }
-      utils.removeElement($node);
+      dom.removeElement($node);
       obj.forEach(function(v, k) {
         if (utils.isObj(dv) && v === '__c__') return;
         var $node,
@@ -354,7 +362,7 @@ module.exports = {
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;
-              if (utils.hasAttribute($node, attr)) {
+              if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
                 a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
                 a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
@@ -380,7 +388,7 @@ module.exports = {
           });
         }
 
-        if (utils.$DOC.contains($node)) return;
+        if (dom.contains(utils.$DOC, $node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -407,7 +415,7 @@ module.exports = {
             hasMe = k in dv;
           }
           if (!hasMe) {
-            utils.removeElement($node);
+            dom.removeElement($node);
           }
         });
         $node.inited = true;
@@ -421,10 +429,11 @@ module.exports = {
   }
 };
 
-},{"../../utils":14}],9:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],9:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -453,211 +462,107 @@ module.exports = {
         $tmp = $node;
         removed = false;
       } else {
-        utils.removeElement($node);
+        dom.removeElement($node);
         removed = true;
       }
     });
   }
 };
 
-},{"../../utils":14}],10:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],10:[function(require,module,exports){
 /**
- * Created by yetone on 14-10-10.
+ * Created by yetone on 14-10-13.
  */
-var config = require('../config');
-var Observer = require('./observer');
-var compiler = require('./compiler');
-var utils = require('../utils');
-var undefined;
-
-var Model = (function(_super) {
-  utils._extends(Model, _super);
-  function Model(obj) {
-    this.$el = obj.$el;
-    this.tpl = obj.tpl;
-    this.data = obj.data;
-    this.inited = obj.inited || false;
-    this.prefix = obj.prefix || config.PREFIX;
-
-    return Model.__super__.constructor.apply(this, arguments);
+// DOM 操作不使用 shim 是因为某些渣渣浏览器无法访问到 Event 和 Element 对象
+function addEventListener($el, type, listener) {
+  function wrapper(e) {
+    e.target = e.srcElement;
+    e.currentTarget = $el;
+    if (listener.handleEvent) {
+      listener.handleEvent(e);
+    } else {
+      listener.call($el, e);
+    }
   }
-  var proto = Model.prototype;
-  proto.getBindValues = function(txt) {
-    var m = txt.match(/\{\{.*?\}\}/g),
-        bvs = [],
-        pl;
-    if (!m) return bvs;
-    m.forEach(function(str) {
-      str = str.substr(2, str.length - 4).trim();
-      pl = utils.parseEvalStr(str).strL;
-      pl.forEach(function(v) {
-        bvs.add(v);
-        var lst = v.split('.');
-        for (var i = 1; i < lst.length; i++) {
-          bvs.add(lst.slice(0, -i).join('.'));
-        }
-      });
-    });
-    return bvs;
+  if ($el.addEventListener) {
+    return $el.addEventListener(type, listener);
+  }
+  if ($el.attachEvent) {
+    return $el.attachEvent('on' + type, wrapper);
+  }
+  return $el['on' + type] = function() {
+    wrapper(window.event);
   };
-  proto.render = function($node, scope) {
-    compiler.compile(this, $node, scope);
-  };
-  return Model;
-})(Observer);
+}
+function removeEventListener($el, type, listener) {
+  if ($el.removeEventListener) {
+    return $el.removeEventListener(type, listener);
+  }
+  if ($el.detachEvent) {
+    return $el.detachEvent('on' + type, listener);
+  }
+  return $el['on' + type] = null;
+}
+function removeElement($el) {
+  if ($el.remove) {
+    return $el.remove();
+  }
+  if ($el.parentNode) {
+    return $el.parentNode.removeChild($el);
+  }
+}
+function querySelectorAll($el, selector) {
+  if ($el.querySelectorAll) {
+    return $el.querySelectorAll(selector);
+  }
+  // TODO
+  return [$el.getElementById(selector.slice(1))];
+}
+function hasAttribute($el, attr) {
+  if ($el.hasAttribute) {
+    return $el.hasAttribute(attr);
+  }
+  return $el[attr] !== undefined;
+}
+function fixContains(a, b) {
+  if (b) {
+    while ((b = b.parentNode)) {
+      if (b === a) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+function contains($el, $el0) {
+  if (typeof $el.contains === 'function') {
+    return $el.contains($el0);
+  }
+  return fixContains($el, $el0)
+}
+function underAttribute($node, attr) {
+  if ($node.parentElement && hasAttribute($node.parentElement, attr)) return true;
+  if ($node.tagName === 'BODY') {
+    return hasAttribute($node, attr);
+  } else {
+    return underAttribute($node.parentNode, attr);
+  }
+}
 
-module.exports = Model;
+module.exports = {
+  addEventListener: addEventListener,
+  removeEventListener: removeEventListener,
+  removeElement: removeElement,
+  querySelectorAll: querySelectorAll,
+  hasAttribute: hasAttribute,
+  contains: contains,
+  underAttribute: underAttribute
+};
 
-},{"../config":1,"../utils":14,"./compiler":4,"./observer":11}],11:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
- * Created by yetone on 14-10-10.
+ * Created by yetone on 14-10-13.
  */
-var utils = require('../utils');
-var undefined;
-
-var Observer = (function() {
-  function Observer() {
-    this.eventHandlerObj = {};
-  }
-  var proto = Observer.prototype;
-  proto.on = function(eventType, cbk) {
-    if (!utils.isFunction(cbk)) {
-      throw new TypeError('eventHandler must be a function');
-    }
-    var self = this;
-    if (!(eventType in self.eventHandlerObj)) {
-      self.eventHandlerObj[eventType] = [];
-    }
-    self.eventHandlerObj[eventType].push(cbk);
-    return self;
-  };
-  proto.off = function(eventType, fun) {
-    var self = this;
-    if (!(eventType in self.eventHandlerObj)) {
-      return self;
-    }
-    self.eventHandlerObj[eventType] = self.eventHandlerObj[eventType].filter(function(item) {
-      return item !== fun;
-    });
-    return self;
-  };
-  proto.trigger = function(e) {
-    var self = this,
-      handlerArgs = utils.arrProto.slice(arguments, 1);
-    if (e in self.eventHandlerObj) {
-      self.eventHandlerObj[e].forEach(function(cbk) {
-        cbk && cbk.apply(self, handlerArgs);
-      });
-    }
-    return self;
-  };
-  proto.watch = function(el, cbk) {
-    var self = this;
-    if (utils.isStr(el)) {
-      el = el.split(' ');
-    }
-    utils.forEach.call(el, function(e) {
-      self.on('set:' + e, cbk);
-      self.on('change:' + e, cbk);
-      self.on('change:' + utils.genPath(e, '__index__'), cbk);
-    });
-    cbk();
-  };
-  return Observer;
-})();
-
-module.exports = Observer;
-
-},{"../utils":14}],12:[function(require,module,exports){
-/**
- * Created by yetone on 14-10-11.
- */
-var expose = new Date - 0;
-
-(function(window, undefined) {
-  if (!window.Array.prototype.indexOf) {
-    window.Array.prototype.indexOf = function(searchElement, fromIndex) {
-      var k;
-      if (this == null) {
-        throw new TypeError('"this" is null or not defined');
-      }
-
-      var O = Object(this);
-      var len = O.length >>> 0;
-      if (len === 0) {
-        return -1;
-      }
-
-      var n = +fromIndex || 0;
-      if (Math.abs(n) === Infinity) {
-        n = 0;
-      }
-      if (n >= len) {
-        return -1;
-      }
-
-      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
-
-      while (k < len) {
-        if (k in O && O[k] === searchElement) {
-          return k;
-        }
-        k++;
-      }
-      return -1;
-    };
-  }
-  if (!window.Array.prototype.forEach) {
-    window.Array.prototype.forEach = function(cbk) {
-      for (var i = 0, l = this.length; i < l; i++) {
-        cbk.call(cbk, this[i], i);
-      }
-    };
-  }
-  if (!window.Array.prototype.filter) {
-    window.Array.prototype.filter = function(fun/*, thisArg*/) {
-
-      if (this === void 0 || this === null) {
-        throw new TypeError();
-      }
-
-      var t = Object(this);
-      var len = t.length >>> 0;
-      if (typeof fun !== 'function') {
-        throw new TypeError();
-      }
-
-      var res = [];
-      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-      for (var i = 0; i < len; i++) {
-        if (i in t) {
-          var val = t[i];
-
-          if (fun.call(thisArg, val, i, t)) {
-            res.push(val);
-          }
-        }
-      }
-
-      return res;
-    };
-  }
-  if (!window.document.contains) {
-    function fixContains(a, b) {
-      if (b) {
-        while ((b = b.parentNode)) {
-          if (b === a) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-    window.document.contains = function(b) {
-      return fixContains(window.document, b);
-    }
-  }
-})((new Function('return this;'))());
 
 function getIEDefineProperties() {
   //IE6-8使用VBScript类的set get语句实现. from 司徒正美
@@ -753,7 +658,197 @@ module.exports = {
   getIEDefineProperties: getIEDefineProperties
 };
 
-},{}],13:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-10.
+ */
+var config = require('../config');
+var Observer = require('./observer');
+var compiler = require('./compiler');
+var utils = require('../utils');
+var undefined;
+
+var Model = (function(_super) {
+  utils._extends(Model, _super);
+  function Model(obj) {
+    this.$el = obj.$el;
+    this.tpl = obj.tpl;
+    this.data = obj.data;
+    this.inited = obj.inited || false;
+    this.prefix = obj.prefix || config.PREFIX;
+
+    return Model.__super__.constructor.apply(this, arguments);
+  }
+  var proto = Model.prototype;
+  proto.getBindValues = function(txt) {
+    var m = txt.match(/\{\{.*?\}\}/g),
+        bvs = [],
+        pl;
+    if (!m) return bvs;
+    m.forEach(function(str) {
+      str = str.substr(2, str.length - 4).trim();
+      pl = utils.parseEvalStr(str).strL;
+      pl.forEach(function(v) {
+        bvs.add(v);
+        var lst = v.split('.');
+        for (var i = 1; i < lst.length; i++) {
+          bvs.add(lst.slice(0, -i).join('.'));
+        }
+      });
+    });
+    return bvs;
+  };
+  proto.render = function($node, scope) {
+    compiler.compile(this, $node, scope);
+  };
+  return Model;
+})(Observer);
+
+module.exports = Model;
+
+},{"../config":1,"../utils":16,"./compiler":4,"./observer":13}],13:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-10.
+ */
+var utils = require('../utils');
+var undefined;
+
+var Observer = (function() {
+  function Observer() {
+    this.eventHandlerObj = {};
+  }
+  var proto = Observer.prototype;
+  proto.on = function(eventType, cbk) {
+    if (!utils.isFunction(cbk)) {
+      throw new TypeError('eventHandler must be a function');
+    }
+    var self = this;
+    if (!(eventType in self.eventHandlerObj)) {
+      self.eventHandlerObj[eventType] = [];
+    }
+    self.eventHandlerObj[eventType].push(cbk);
+    return self;
+  };
+  proto.off = function(eventType, fun) {
+    var self = this;
+    if (!(eventType in self.eventHandlerObj)) {
+      return self;
+    }
+    self.eventHandlerObj[eventType] = self.eventHandlerObj[eventType].filter(function(item) {
+      return item !== fun;
+    });
+    return self;
+  };
+  proto.trigger = function(e) {
+    var self = this,
+      handlerArgs = utils.arrProto.slice(arguments, 1);
+    if (e in self.eventHandlerObj) {
+      self.eventHandlerObj[e].forEach(function(cbk) {
+        cbk && cbk.apply(self, handlerArgs);
+      });
+    }
+    return self;
+  };
+  proto.watch = function(el, cbk) {
+    var self = this;
+    if (utils.isStr(el)) {
+      el = el.split(' ');
+    }
+    utils.forEach.call(el, function(e) {
+      self.on('set:' + e, cbk);
+      self.on('change:' + e, cbk);
+      self.on('change:' + utils.genPath(e, '__index__'), cbk);
+    });
+    cbk();
+  };
+  return Observer;
+})();
+
+module.exports = Observer;
+
+},{"../utils":16}],14:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-11.
+ */
+var utils = require('../utils');
+var expose = new Date - 0;
+var undefined;
+
+function shim() {
+  if (!utils.arrProto.indexOf) {
+    utils.arrProto.indexOf = function(searchElement, fromIndex) {
+      var k;
+      if (this == null) {
+        throw new TypeError('"this" is null or not defined');
+      }
+
+      var O = Object(this);
+      var len = O.length >>> 0;
+      if (len === 0) {
+        return -1;
+      }
+
+      var n = +fromIndex || 0;
+      if (Math.abs(n) === Infinity) {
+        n = 0;
+      }
+      if (n >= len) {
+        return -1;
+      }
+
+      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+
+      while (k < len) {
+        if (k in O && O[k] === searchElement) {
+          return k;
+        }
+        k++;
+      }
+      return -1;
+    };
+  }
+  if (!utils.arrProto.forEach) {
+    utils.arrProto.forEach = function(cbk) {
+      for (var i = 0, l = this.length; i < l; i++) {
+        cbk.call(cbk, this[i], i);
+      }
+    };
+  }
+  if (!utils.arrProto.filter) {
+    utils.arrProto.filter = function(fun/*, thisArg*/) {
+
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (typeof fun !== 'function') {
+        throw new TypeError();
+      }
+
+      var res = [];
+      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+      for (var i = 0; i < len; i++) {
+        if (i in t) {
+          var val = t[i];
+
+          if (fun.call(thisArg, val, i, t)) {
+            res.push(val);
+          }
+        }
+      }
+
+      return res;
+    };
+  }
+}
+
+module.exports = {
+  shim: shim
+};
+
+},{"../utils":16}],15:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -833,7 +928,7 @@ var Store = (function() {
 
 module.exports = Store;
 
-},{"../utils":14}],14:[function(require,module,exports){
+},{"../utils":16}],16:[function(require,module,exports){
 if (typeof window === 'undefined') {
   window = getWindow();
 }
@@ -847,7 +942,7 @@ var arrProto = window.Array.prototype,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
     isIE = !+'\v1',
-    shims = require('./libs/shims'),
+    helpers = require('./libs/helpers'),
     $DOC = window.document || {},
     undefined;
 // 补丁，为了某些浏览器
@@ -881,7 +976,7 @@ var arrProto = window.Array.prototype,
       };
     // IE6-8 使用 VBScript 类的 set get 语句实现. from 司徒正美
     } else if (window.VBArray) {
-      defs = shims.getIEDefineProperties();
+      defs = helpers.getIEDefineProperties();
     }
   }
 
@@ -974,66 +1069,6 @@ if (!isFunction(arrProto.has)) {
   };
 }
 
-// DOM 操作不使用 shim 是因为某些渣渣浏览器无法访问到 Event 和 Element 对象
-function addEventListener($el, type, listener) {
-  function wrapper(e) {
-    e.target = e.srcElement;
-    e.currentTarget = $el;
-    if (listener.handleEvent) {
-      listener.handleEvent(e);
-    } else {
-      listener.call($el, e);
-    }
-  }
-  if ($el.addEventListener) {
-    return $el.addEventListener(type, listener);
-  }
-  if ($el.attachEvent) {
-    return $el.attachEvent('on' + type, wrapper);
-  }
-  return $el['on' + type] = function() {
-    wrapper(window.event);
-  };
-}
-function removeEventListener($el, type, listener) {
-  if ($el.removeEventListener) {
-    return $el.removeEventListener(type, listener);
-  }
-  if ($el.detachEvent) {
-    return $el.detachEvent('on' + type, listener);
-  }
-  return $el['on' + type] = null;
-}
-function removeElement($el) {
-  if ($el.remove) {
-    return $el.remove();
-  }
-  if ($el.parentNode) {
-    return $el.parentNode.removeChild($el);
-  }
-}
-function querySelectorAll($el, selector) {
-  if ($el.querySelectorAll) {
-    return $el.querySelectorAll(selector);
-  }
-  // TODO
-  return [$el.getElementById(selector.slice(1))];
-}
-function hasAttribute($el, attr) {
-  if ($el.hasAttribute) {
-    return $el.hasAttribute(attr);
-  }
-  return $el[attr] !== undefined;
-}
-
-function underAttribute($node, attr) {
-  if ($node.parentElement.hasAttribute(attr)) return true;
-  if ($node.tagName === 'BODY') {
-    return $node.hasAttribute(attr);
-  } else {
-    return underAttribute($node.parentNode, attr);
-  }
-}
 function getType(obj) {
   return objProto.toString.call(obj).slice(8, -1);
 }
@@ -1323,14 +1358,9 @@ module.exports = {
   getWindow: getWindow,
 
   isIE: isIE,
-  addEventListener: addEventListener,
-  removeEventListener: removeEventListener,
-  removeElement: removeElement,
-  querySelectorAll: querySelectorAll,
-  hasAttribute: hasAttribute,
 
   WIN: window,
   $DOC: $DOC
 };
 
-},{"./libs/shims":12}]},{},[2])
+},{"./libs/helpers":11}]},{},[2])

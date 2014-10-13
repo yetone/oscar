@@ -1,6 +1,7 @@
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -21,7 +22,7 @@ module.exports = {
       if (utils.isObj(dv)) {
         obj = utils.getObjKeys(dv);
       }
-      utils.removeElement($node);
+      dom.removeElement($node);
       obj.forEach(function(v, k) {
         if (utils.isObj(dv) && v === '__c__') return;
         var $node,
@@ -52,7 +53,7 @@ module.exports = {
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;
-              if (utils.hasAttribute($node, attr)) {
+              if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
                 a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
                 a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
@@ -78,7 +79,7 @@ module.exports = {
           });
         }
 
-        if (utils.$DOC.contains($node)) return;
+        if (dom.contains(utils.$DOC, $node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -105,7 +106,7 @@ module.exports = {
             hasMe = k in dv;
           }
           if (!hasMe) {
-            utils.removeElement($node);
+            dom.removeElement($node);
           }
         });
         $node.inited = true;

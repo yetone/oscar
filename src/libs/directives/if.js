@@ -1,6 +1,7 @@
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -29,7 +30,7 @@ module.exports = {
         $tmp = $node;
         removed = false;
       } else {
-        utils.removeElement($node);
+        dom.removeElement($node);
         removed = true;
       }
     });

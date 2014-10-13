@@ -6,6 +6,7 @@ var forDirective = require('./directives/for');
 var bindDirective = require('./directives/bind');
 var actionDirective = require('./directives/action');
 var classDirective = require('./directives/class');
+var dom = require('./dom');
 var utils = require('../utils');
 var undefined;
 
@@ -16,11 +17,11 @@ var compile = function(model, $node, scope) {
   if ($node.nodeType === 3) {
     return utils._bind(model, $node, 'textContent', scope);
   }
-  hasBind = utils.hasAttribute($node, model.prefix + 'bind');
-  hasClass = utils.hasAttribute($node, model.prefix + 'class');
-  hasAction = utils.hasAttribute($node, model.prefix + 'action');
-  hasIf = utils.hasAttribute($node, model.prefix + 'if');
-  hasFor = utils.hasAttribute($node, model.prefix + 'for');
+  hasBind = dom.hasAttribute($node, model.prefix + 'bind');
+  hasClass = dom.hasAttribute($node, model.prefix + 'class');
+  hasAction = dom.hasAttribute($node, model.prefix + 'action');
+  hasIf = dom.hasAttribute($node, model.prefix + 'if');
+  hasFor = dom.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
     return v.name.indexOf(model.prefix) !== 0;
@@ -44,7 +45,7 @@ var compile = function(model, $node, scope) {
   if (hasIf) {
     ifDirective.compile(model, $node, scope);
   }
-  if (utils.$DOC.contains($node)) {
+  if (dom.contains(utils.$DOC, $node)) {
     utils.toArray($node.childNodes).forEach(function($node) {
       compile(model, $node);
     });

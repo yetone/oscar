@@ -1,6 +1,7 @@
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -8,7 +9,7 @@ module.exports = {
   compile: function(model, $node, scope) {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
-        multiple = $node.hasAttribute('multiple'),
+        multiple = dom.hasAttribute($node, 'multiple'),
         bindValue = $node.getAttribute(model.prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
@@ -20,7 +21,7 @@ module.exports = {
         });
       });
       if (eventType) {
-        utils.addEventListener($node, eventType, function() {
+        dom.addEventListener($node, eventType, function() {
           var $selectedOpts = utils.toArray($node.selectedOptions),
             acc = [],
             es;
@@ -47,7 +48,7 @@ module.exports = {
         });
       }
       if (eventType) {
-        utils.addEventListener($node, eventType, function() {
+        dom.addEventListener($node, eventType, function() {
           var es;
           if ($node.type === 'radio') {
             es = '(scope.' + bindValue + ' = this.value)';

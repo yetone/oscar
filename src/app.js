@@ -1,7 +1,11 @@
 var Model = require('./libs/model'),
     builder = require('./libs/builder'),
+    shims = require('./libs/shims'),
+    dom = require('./libs/dom'),
     utils = require('./utils');
 
+// do shim
+shims.shim();
 (function(window, undefined) {
   window.Oscar = (function() {
     function Oscar() {
@@ -15,7 +19,7 @@ var Model = require('./libs/model'),
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
         throw new TypeError('invalid model type');
       }
-      var $els = utils.querySelectorAll(utils.$DOC, obj.el);
+      var $els = dom.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }

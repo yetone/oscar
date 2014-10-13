@@ -1,6 +1,7 @@
 /**
  * Created by yetone on 14-10-10.
  */
+var dom = require('../dom');
 var utils = require('../../utils');
 var undefined;
 
@@ -9,7 +10,7 @@ module.exports = {
     var oact = $node.getAttribute(model.prefix + 'action'),
         acl = /(\w+):(.*)/g.exec(oact);
     if (acl.length === 3) {
-      utils.addEventListener($node, acl[1], function(e) {
+      dom.addEventListener($node, acl[1], function(e) {
         utils.runWithEvent(acl[2], scope, this, e);
       });
     }
