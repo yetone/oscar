@@ -11,7 +11,7 @@ var Observer = (function() {
   var proto = Observer.prototype;
   proto.on = function(eventType, cbk) {
     if (!utils.isFunction(cbk)) {
-      throw new Error('eventHandler must be a function');
+      throw new TypeError('eventHandler must be a function');
     }
     var self = this;
     if (!(eventType in self.eventHandlerObj)) {

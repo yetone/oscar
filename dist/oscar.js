@@ -19,7 +19,7 @@ var Model = require('./libs/model'),
     };
     proto.modelRegister = function(obj) {
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
-        throw new Error('invalid model type');
+        throw new TypeError('invalid model type');
       }
       var $els = utils.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
@@ -522,7 +522,7 @@ var Observer = (function() {
   var proto = Observer.prototype;
   proto.on = function(eventType, cbk) {
     if (!utils.isFunction(cbk)) {
-      throw new Error('eventHandler must be a function');
+      throw new TypeError('eventHandler must be a function');
     }
     var self = this;
     if (!(eventType in self.eventHandlerObj)) {
