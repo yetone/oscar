@@ -1,6 +1,4 @@
-try {
-  window;
-} catch(e) {
+if (typeof window === 'undefined') {
   window = getWindow();
 }
 var arrProto = window.Array.prototype,
