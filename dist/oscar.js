@@ -769,7 +769,7 @@ var arrProto = window.Array.prototype,
     isArray = window.Array.isArray,
     isIE = !+'\v1',
     shims = require('./libs/shims'),
-    $DOC = window.document,
+    $DOC = window.document || {},
     undefined;
 // 补丁，为了某些浏览器
 (function() {
