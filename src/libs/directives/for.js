@@ -28,9 +28,9 @@ module.exports = {
       obj.forEach(function(v, k) {
         if (utils.isObj(dv) && v === '__c__') return;
         var $node,
-          re = /\{\{(.*?)\}\}/g,
-          idx = k,
-          kstr = '$index';
+            re = /\{\{(.*?)\}\}/g,
+            idx = k,
+            kstr = '$index';
         if (utils.isObj(dv)) {
           idx = v;
           kstr = '$key';
