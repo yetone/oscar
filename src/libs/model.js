@@ -2,7 +2,7 @@
  * Created by yetone on 14-10-10.
  */
 var config = require('../config');
-var observer = require('./observer');
+var Observer = require('./observer');
 var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
@@ -41,8 +41,6 @@ var Model = (function(_super) {
     compiler.compile(this, $node, scope);
   };
   return Model;
-})(observer.Observer);
+})(Observer);
 
-module.exports = {
-  Model: Model
-};
+module.exports = Model;

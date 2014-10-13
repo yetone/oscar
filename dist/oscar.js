@@ -4,7 +4,7 @@ module.exports = {
   PREFIX: 'oscar-'
 };
 },{}],2:[function(require,module,exports){
-var Model = require('./libs/model').Model,
+var Model = require('./libs/model'),
     builder = require('./libs/builder'),
     utils = require('./utils');
 
@@ -52,7 +52,7 @@ var Model = require('./libs/model').Model,
 /**
  * Created by yetone on 14-10-11.
  */
-var Store = require('./store').Store;
+var Store = require('./store');
 var utils = require('../utils');
 var undefined;
 
@@ -465,7 +465,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var config = require('../config');
-var observer = require('./observer');
+var Observer = require('./observer');
 var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
@@ -504,11 +504,9 @@ var Model = (function(_super) {
     compiler.compile(this, $node, scope);
   };
   return Model;
-})(observer.Observer);
+})(Observer);
 
-module.exports = {
-  Model: Model
-};
+module.exports = Model;
 
 },{"../config":1,"../utils":14,"./compiler":4,"./observer":11}],11:[function(require,module,exports){
 /**
@@ -568,9 +566,7 @@ var Observer = (function() {
   return Observer;
 })();
 
-module.exports = {
-  Observer: Observer
-};
+module.exports = Observer;
 
 },{"../utils":14}],12:[function(require,module,exports){
 /**
@@ -835,9 +831,7 @@ var Store = (function() {
   return Store;
 })();
 
-module.exports = {
-  Store: Store
-};
+module.exports = Store;
 
 },{"../utils":14}],14:[function(require,module,exports){
 if (typeof window === 'undefined') {

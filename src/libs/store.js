@@ -75,6 +75,4 @@ var Store = (function() {
   return Store;
 })();
 
-module.exports = {
-  Store: Store
-};
+module.exports = Store;

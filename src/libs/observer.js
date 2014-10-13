@@ -55,6 +55,4 @@ var Observer = (function() {
   return Observer;
 })();
 
-module.exports = {
-  Observer: Observer
-};
+module.exports = Observer;

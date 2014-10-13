@@ -1,7 +1,7 @@
 /**
  * Created by yetone on 14-10-11.
  */
-var Store = require('./store').Store;
+var Store = require('./store');
 var utils = require('../utils');
 var undefined;
 

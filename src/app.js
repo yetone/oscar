@@ -1,4 +1,4 @@
-var Model = require('./libs/model').Model,
+var Model = require('./libs/model'),
     builder = require('./libs/builder'),
     utils = require('./utils');
 
