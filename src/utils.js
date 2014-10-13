@@ -380,15 +380,14 @@ function getEventType($node) {
 function _bind(model, obj, attr, scope) {
   var bindValues = model.getBindValues(obj[attr], scope),
       es = getEvalString(obj[attr]);
-  if (es) {
-    model.watch(bindValues, function() {
-      try {
-        obj[attr] = runWithScope(es, scope);
-      } catch(e) {
-        console.log(e);
-      }
-    });
-  }
+  if (!es) return;
+  model.watch(bindValues, function() {
+    try {
+      obj[attr] = runWithScope(es, scope);
+    } catch(e) {
+      console.log(e);
+    }
+  });
 }
 
 module.exports = {

@@ -303,8 +303,10 @@ module.exports = {
         $cns = $node.childNodes,
         exp = $node.getAttribute(model.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-        acc = [];
-    if (!expl && expl.length !== 3) return;
+        acc = [],
+        bindValues;
+    if (!expl || expl.length !== 3) return;
+    bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
     function render() {
       var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
         obj = dv;
@@ -402,7 +404,6 @@ module.exports = {
         model.render($node);
       });
     }
-    var bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
     model.watch(bindValues, function() {
       render();
     });
@@ -1311,15 +1312,14 @@ function getEventType($node) {
 function _bind(model, obj, attr, scope) {
   var bindValues = model.getBindValues(obj[attr], scope),
       es = getEvalString(obj[attr]);
-  if (es) {
-    model.watch(bindValues, function() {
-      try {
-        obj[attr] = runWithScope(es, scope);
-      } catch(e) {
-        console.log(e);
-      }
-    });
-  }
+  if (!es) return;
+  model.watch(bindValues, function() {
+    try {
+      obj[attr] = runWithScope(es, scope);
+    } catch(e) {
+      console.log(e);
+    }
+  });
 }
 
 module.exports = {
