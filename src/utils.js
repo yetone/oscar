@@ -49,90 +49,6 @@ var arrProto = window.Array.prototype,
     }
   }
 
-  // 其他的补丁, 为了伟大的 IE
-  if (!arrProto.indexOf) {
-    arrProto.indexOf = function(searchElement, fromIndex) {
-      var k;
-      if (this == null) {
-        throw new TypeError('"this" is null or not defined');
-      }
-
-      var O = Object(this);
-      var len = O.length >>> 0;
-      if (len === 0) {
-        return -1;
-      }
-
-      var n = +fromIndex || 0;
-      if (Math.abs(n) === Infinity) {
-        n = 0;
-      }
-      if (n >= len) {
-        return -1;
-      }
-
-      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
-
-      while (k < len) {
-        if (k in O && O[k] === searchElement) {
-          return k;
-        }
-        k++;
-      }
-      return -1;
-    };
-  }
-  if (!arrProto.forEach) {
-    arrProto.forEach = function(cbk) {
-      for (var i = 0, l = this.length; i < l; i++) {
-        cbk.call(cbk, this[i], i);
-      }
-    };
-  }
-  if (!arrProto.filter) {
-    arrProto.filter = function(fun/*, thisArg*/) {
-
-      if (this === void 0 || this === null) {
-        throw new TypeError();
-      }
-
-      var t = Object(this);
-      var len = t.length >>> 0;
-      if (typeof fun !== 'function') {
-        throw new TypeError();
-      }
-
-      var res = [];
-      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
-      for (var i = 0; i < len; i++) {
-        if (i in t) {
-          var val = t[i];
-
-          if (fun.call(thisArg, val, i, t)) {
-            res.push(val);
-          }
-        }
-      }
-
-      return res;
-    };
-  }
-  if (!$DOC.contains) {
-    function fixContains(a, b) {
-      if (b) {
-        while ((b = b.parentNode)) {
-          if (b === a) {
-            return true;
-          }
-        }
-      }
-      return false;
-    }
-    $DOC.contains = function(b) {
-      return fixContains($DOC, b);
-    }
-  }
-
   if (!isArray) {
     isArray = function(obj) {
       return getType(obj) === 'Array';
@@ -178,9 +94,9 @@ var arrProto = window.Array.prototype,
       };
     }());
   }
-
 })();
 
+// 扩展
 if (!isFunction(arrProto.has)) {
   arrProto.has = function(obj) {
     return this.indexOf(obj) !== -1;
@@ -222,6 +138,7 @@ if (!isFunction(arrProto.has)) {
   };
 }
 
+// DOM 操作不使用 shim 是因为某些渣渣浏览器无法访问到 Event 和 Element 对象
 function addEventListener($el, type, listener) {
   function wrapper(e) {
     e.target = e.srcElement;
@@ -259,7 +176,6 @@ function removeElement($el) {
     return $el.parentNode.removeChild($el);
   }
 }
-
 function querySelectorAll($el, selector) {
   if ($el.querySelectorAll) {
     return $el.querySelectorAll(selector);
@@ -267,7 +183,6 @@ function querySelectorAll($el, selector) {
   // TODO
   return [$el.getElementById(selector.slice(1))];
 }
-
 function hasAttribute($el, attr) {
   if ($el.hasAttribute) {
     return $el.hasAttribute(attr);
@@ -283,11 +198,9 @@ function underAttribute($node, attr) {
     return underAttribute($node.parentNode, attr);
   }
 }
-
 function getType(obj) {
   return objProto.toString.call(obj).slice(8, -1);
 }
-
 function isObj(obj) {
   return getType(obj) === 'Object';
 }

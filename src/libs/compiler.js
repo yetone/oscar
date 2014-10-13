@@ -25,13 +25,13 @@ var compile = function(model, $node, scope) {
   attrs = attrs.filter(function(v) {
     return v.name.indexOf(model.prefix) !== 0;
   });
-  attrs.forEach(function(v) {
-    utils._bind(model, v, 'value', scope);
-  });
   if (hasFor && !$node.inited) {
     forDirective.compile(model, $node, scope);
     return;
   }
+  attrs.forEach(function(v) {
+    utils._bind(model, v, 'value', scope);
+  });
   if (hasBind) {
     bindDirective.compile(model, $node, scope);
   }

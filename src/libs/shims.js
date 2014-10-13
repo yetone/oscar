@@ -3,6 +3,91 @@
  */
 var expose = new Date - 0;
 
+(function(window, undefined) {
+  if (!window.Array.prototype.indexOf) {
+    window.Array.prototype.indexOf = function(searchElement, fromIndex) {
+      var k;
+      if (this == null) {
+        throw new TypeError('"this" is null or not defined');
+      }
+
+      var O = Object(this);
+      var len = O.length >>> 0;
+      if (len === 0) {
+        return -1;
+      }
+
+      var n = +fromIndex || 0;
+      if (Math.abs(n) === Infinity) {
+        n = 0;
+      }
+      if (n >= len) {
+        return -1;
+      }
+
+      k = Math.max(n >= 0 ? n : len - Math.abs(n), 0);
+
+      while (k < len) {
+        if (k in O && O[k] === searchElement) {
+          return k;
+        }
+        k++;
+      }
+      return -1;
+    };
+  }
+  if (!window.Array.prototype.forEach) {
+    window.Array.prototype.forEach = function(cbk) {
+      for (var i = 0, l = this.length; i < l; i++) {
+        cbk.call(cbk, this[i], i);
+      }
+    };
+  }
+  if (!window.Array.prototype.filter) {
+    window.Array.prototype.filter = function(fun/*, thisArg*/) {
+
+      if (this === void 0 || this === null) {
+        throw new TypeError();
+      }
+
+      var t = Object(this);
+      var len = t.length >>> 0;
+      if (typeof fun !== 'function') {
+        throw new TypeError();
+      }
+
+      var res = [];
+      var thisArg = arguments.length >= 2 ? arguments[1] : void 0;
+      for (var i = 0; i < len; i++) {
+        if (i in t) {
+          var val = t[i];
+
+          if (fun.call(thisArg, val, i, t)) {
+            res.push(val);
+          }
+        }
+      }
+
+      return res;
+    };
+  }
+  if (!window.document.contains) {
+    function fixContains(a, b) {
+      if (b) {
+        while ((b = b.parentNode)) {
+          if (b === a) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+    window.document.contains = function(b) {
+      return fixContains(window.document, b);
+    }
+  }
+})((new Function('return this;'))());
+
 function getIEDefineProperties() {
   //IE6-8使用VBScript类的set get语句实现. from 司徒正美
   window.execScript([
