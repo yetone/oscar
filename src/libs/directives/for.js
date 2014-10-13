@@ -15,36 +15,35 @@ module.exports = {
         exp = $node.getAttribute(model.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         acc = [],
+        obj,
+        isArray,
         bindValues;
     if (!expl || expl.length !== 3) return;
     bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
+    obj = eval('(scope' + utils.genS(expl[2]) + ')');
+    isArray = utils.isArray(obj);
     function render() {
-      var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
-        obj = dv;
-      if (utils.isObj(dv)) {
-        obj = utils.getObjKeys(dv);
-      }
+      var re = /\{\{(.*?)\}\}/g,
+          kstr;
       dom.removeElement($node);
-      obj.forEach(function(v, k) {
-        if (utils.isObj(dv) && v === '__c__') return;
-        var $node,
-            re = /\{\{(.*?)\}\}/g,
-            idx = k,
-            kstr = '$index';
-        if (utils.isObj(dv)) {
-          idx = v;
-          kstr = '$key';
+      for (var key in obj) {
+        if (key === '__c__') continue;
+        if (!utils.hasProp.call(obj, key)) continue;
+        if (isArray && isNaN(+key)) continue;
+        kstr = '$key';
+        if (isArray) {
+          kstr = '$index';
         }
-        if (acc[idx]) {
-          $node = acc[idx]['$node'];
+        if (acc[key]) {
+          $node = acc[key]['$node'];
         } else {
           $node = $tmp.cloneNode(true);
           // 起名什么的最讨厌了！
           (function __($node) {
             if ($node.nodeType === 3) {
               $node.textContent = $node.textContent.replace(re, function(_, a) {
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
+                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
                 return '{{' + a + '}}';
               });
               return;
@@ -57,8 +56,8 @@ module.exports = {
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
+                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
                 $node.setAttribute(attr, a);
               }
             });
@@ -67,8 +66,8 @@ module.exports = {
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + idx + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + idx + '\'');
+                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
+                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
                 return '{{' + a + '}}';
               });
             });
@@ -101,19 +100,14 @@ module.exports = {
         });
         model.watch(bindValues, function() {
           var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
-            hasMe;
-          if (utils.isObj(dv)) {
-            hasMe = v in dv;
-          } else {
-            hasMe = k in dv;
-          }
+              hasMe = key in dv;
           if (!hasMe) {
             dom.removeElement($node);
           }
         });
         $node.inited = true;
         model.render($node);
-      });
+      }
     }
     model.watch(bindValues, function() {
       render();
