@@ -10,7 +10,7 @@ var arrProto = window.Array.prototype,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
-    isIE = !+'\v1',
+    isIE = !-[1,],
     helpers = require('./libs/helpers'),
     $DOC = window.document || {},
     undefined;
