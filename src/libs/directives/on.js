@@ -7,7 +7,7 @@ var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
-    var oact = $node.getAttribute(model.prefix + 'action'),
+    var oact = $node.getAttribute(model.prefix + 'on'),
         acl = /(\w+):(.*)/g.exec(oact);
     if (acl.length === 3) {
       dom.addEventListener($node, acl[1], function(e) {

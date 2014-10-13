@@ -47,9 +47,9 @@ module.exports = {
               });
               return;
             }
-            var oscarAttrs = ['bind', 'action', 'class', 'if'],
-              attrs = utils.toArray($node.attributes),
-              $cns = utils.toArray($node.childNodes);
+            var oscarAttrs = ['bind', 'on', 'class', 'if'],
+                attrs = utils.toArray($node.attributes),
+                $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;

@@ -13,15 +13,15 @@
         <input id="new-todo" autofocus autocomplete="off" placeholder="What needs to be done?">
       </header>
       <section id="main">
-        <input id="toggle-all" type="checkbox" oscar-action="click: allDone()">
+        <input id="toggle-all" type="checkbox" oscar-on="click: allDone()">
         <ul id="todo-list">
           <li class="todo" oscar-for="todo in todos" oscar-class="{completed: todo.completed, editing: todo.editing, hidden: todo.removed || todo.hide}">
             <div class="view">
               <input class="toggle" type="checkbox" oscar-bind="todo.completed">
-              <label oscar-action="dblclick: editTodo(todo)">{{ todo.title }}</label>
-              <button class="destroy" oscar-action="click: removeTodo(todo)"></button>
+              <label oscar-on="dblclick: editTodo(todo)">{{ todo.title }}</label>
+              <button class="destroy" oscar-on="click: removeTodo(todo)"></button>
             </div>
-            <input class="edit" type="text" value="{{todo.title}}" oscar-action="keydown: submitEdit(todo, $this, $event)">
+            <input class="edit" type="text" value="{{todo.title}}" oscar-on="keydown: submitEdit(todo, $this, $event)">
           </li>
         </ul>
       </section>
@@ -30,11 +30,11 @@
           <strong>{{ remaining }}</strong> {{ pluralize('item', remaining) }} left
         </span>
         <ul id="filters">
-          <li><a href="#/all" oscar-action="click: filter = 'all'" oscar-class="{selected: filter === 'all'}">All</a></li>
-          <li><a href="#/active" oscar-action="click: filter = 'active'" oscar-class="{selected: filter === 'active'}">Active</a></li>
-          <li><a href="#/completed" oscar-action="click: filter = 'completed'" oscar-class="{selected: filter === 'completed'}">Completed</a></li>
+          <li><a href="#/all" oscar-on="click: filter = 'all'" oscar-class="{selected: filter === 'all'}">All</a></li>
+          <li><a href="#/active" oscar-on="click: filter = 'active'" oscar-class="{selected: filter === 'active'}">Active</a></li>
+          <li><a href="#/completed" oscar-on="click: filter = 'completed'" oscar-class="{selected: filter === 'completed'}">Completed</a></li>
         </ul>
-        <button id="clear-completed" oscar-action="click: removeCompleted()" oscar-class="{hidden: completedCount <= 0}">
+        <button id="clear-completed" oscar-on="click: removeCompleted()" oscar-class="{hidden: completedCount <= 0}">
           Clear completed ({{ completedCount }})
         </button>
       </footer>

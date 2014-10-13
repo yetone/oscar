@@ -146,7 +146,7 @@ module.exports = {
 var ifDirective = require('./directives/if');
 var forDirective = require('./directives/for');
 var bindDirective = require('./directives/bind');
-var actionDirective = require('./directives/action');
+var onDirective = require('./directives/on');
 var classDirective = require('./directives/class');
 var dom = require('./dom');
 var utils = require('../utils');
@@ -155,13 +155,13 @@ var undefined;
 var compile = function(model, $node, scope) {
   $node = $node || model.$el;
   scope = scope || model.data;
-  var bind, hasBind, hasClass, hasAction, hasIf, hasFor, bindValues, attrs;
+  var bind, hasBind, hasClass, hasOn, hasIf, hasFor, attrs;
   if ($node.nodeType === 3) {
     return utils._bind(model, $node, 'textContent', scope);
   }
   hasBind = dom.hasAttribute($node, model.prefix + 'bind');
   hasClass = dom.hasAttribute($node, model.prefix + 'class');
-  hasAction = dom.hasAttribute($node, model.prefix + 'action');
+  hasOn = dom.hasAttribute($node, model.prefix + 'on');
   hasIf = dom.hasAttribute($node, model.prefix + 'if');
   hasFor = dom.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);
@@ -181,8 +181,8 @@ var compile = function(model, $node, scope) {
   if (hasClass) {
     classDirective.compile(model, $node, scope);
   }
-  if (hasAction) {
-    actionDirective.compile(model, $node, scope);
+  if (hasOn) {
+    onDirective.compile(model, $node, scope);
   }
   if (hasIf) {
     ifDirective.compile(model, $node, scope);
@@ -197,27 +197,7 @@ var compile = function(model, $node, scope) {
 module.exports = {
   compile: compile
 };
-},{"../utils":16,"./directives/action":5,"./directives/bind":6,"./directives/class":7,"./directives/for":8,"./directives/if":9,"./dom":10}],5:[function(require,module,exports){
-/**
- * Created by yetone on 14-10-10.
- */
-var dom = require('../dom');
-var utils = require('../../utils');
-var undefined;
-
-module.exports = {
-  compile: function(model, $node, scope) {
-    var oact = $node.getAttribute(model.prefix + 'action'),
-        acl = /(\w+):(.*)/g.exec(oact);
-    if (acl.length === 3) {
-      dom.addEventListener($node, acl[1], function(e) {
-        utils.runWithEvent(acl[2], scope, this, e);
-      });
-    }
-  }
-};
-
-},{"../../utils":16,"../dom":10}],6:[function(require,module,exports){
+},{"../utils":16,"./directives/bind":5,"./directives/class":6,"./directives/for":7,"./directives/if":8,"./directives/on":9,"./dom":10}],5:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -282,7 +262,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],7:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],6:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -306,7 +286,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16}],8:[function(require,module,exports){
+},{"../../utils":16}],7:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -356,9 +336,9 @@ module.exports = {
               });
               return;
             }
-            var oscarAttrs = ['bind', 'action', 'class', 'if'],
-              attrs = utils.toArray($node.attributes),
-              $cns = utils.toArray($node.childNodes);
+            var oscarAttrs = ['bind', 'on', 'class', 'if'],
+                attrs = utils.toArray($node.attributes),
+                $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
               var attr = model.prefix + _attr,
                 a;
@@ -429,7 +409,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],9:[function(require,module,exports){
+},{"../../utils":16,"../dom":10}],8:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -466,6 +446,26 @@ module.exports = {
         removed = true;
       }
     });
+  }
+};
+
+},{"../../utils":16,"../dom":10}],9:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-10.
+ */
+var dom = require('../dom');
+var utils = require('../../utils');
+var undefined;
+
+module.exports = {
+  compile: function(model, $node, scope) {
+    var oact = $node.getAttribute(model.prefix + 'on'),
+        acl = /(\w+):(.*)/g.exec(oact);
+    if (acl.length === 3) {
+      dom.addEventListener($node, acl[1], function(e) {
+        utils.runWithEvent(acl[2], scope, this, e);
+      });
+    }
   }
 };
 
