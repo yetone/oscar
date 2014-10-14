@@ -13,7 +13,7 @@ function addEventListener($el, type, listener) {
     }
   }
   if ($el.addEventListener) {
-    return $el.addEventListener(type, listener);
+    return $el.addEventListener(type, listener, false);
   }
   if ($el.attachEvent) {
     return $el.attachEvent('on' + type, wrapper);
