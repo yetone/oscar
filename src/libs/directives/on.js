@@ -7,11 +7,22 @@ var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
-    var oact = $node.getAttribute(model.prefix + 'on'),
-        acl = /(\w+):(.*)/g.exec(oact);
-    if (acl.length === 3) {
-      dom.addEventListener($node, acl[1], function(e) {
-        utils.runWithEvent(acl[2], scope, this, e);
+    var attrs = utils.toArray($node.attributes);
+    utils.forEach(attrs, function(v) {
+      if (v.name.indexOf(model.prefix + 'on-') !== 0) return;
+      var eventName = new RegExp(model.prefix + 'on-' + '(.*)').exec(v.name)[1];
+      var cbkStr = v.value;
+      if (eventName) {
+        dom.addEventListener($node, eventName, function (e) {
+          utils.runWithEvent(cbkStr, scope, this, e);
+        });
+      }
+    });
+    var str = $node.getAttribute(model.prefix + 'on');
+    if (str) {
+      var onObj = utils.runWithScope('{' + str + '}', scope);
+      utils.forEach(onObj, function(cbk, evt) {
+        dom.addEventListener($node, evt, cbk);
       });
     }
   }

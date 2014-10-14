@@ -19,7 +19,7 @@ var compile = function(model, $node, scope) {
   }
   hasBind = dom.hasAttribute($node, model.prefix + 'bind');
   hasClass = dom.hasAttribute($node, model.prefix + 'class');
-  hasOn = dom.hasAttribute($node, model.prefix + 'on');
+  hasOn = true;
   hasIf = dom.hasAttribute($node, model.prefix + 'if');
   hasFor = dom.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);

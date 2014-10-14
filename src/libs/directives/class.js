@@ -9,7 +9,7 @@ module.exports = {
     var ocls = $node.getAttribute(model.prefix + 'class'),
         paths = model.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
-      var classObj = utils.runWithScope('(' + ocls + ')', scope);
+      var classObj = utils.runWithScope('({' + ocls + '})', scope);
       utils.forEach(classObj, function(v, cls) {
         if (v === true) {
           $node.classList.add(cls);

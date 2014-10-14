@@ -425,9 +425,6 @@ function splitPath(paths) {
 function watch(paths, cbk, scope) {
   // scope 很重要
   forEach(splitPath(paths), function(v, k) {
-    if (k === 'countries') {
-      console.log('xxx');
-    }
     try {
       if (k === '*') {
         scope.__observer__.watch(v, cbk);

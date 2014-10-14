@@ -66,15 +66,27 @@ function buildArray(arr, parent) {
     arr[method] = function() {
       var oldL = this.length;
       args = utils.toArray(arguments);
+      switch (method) {
+        case 'splice':
+          utils.forEach(utils.range(args[0], args[1]), function(v) {
+            arr.__observer__.trigger('remove:' + v);
+            arr.__observer__.off('set:' + v);
+            arr.__observer__.off('change:' + v);
+          });
+          break;
+        case 'pop':
+          arr.__observer__.trigger('remove:' + (this.length - 1));
+          arr.__observer__.off('set:' + (this.length - 1));
+          arr.__observer__.off('change:' + (this.length - 1));
+          break;
+        case 'shift':
+          arr.__observer__.trigger('remove:0');
+          arr.__observer__.off('set:0');
+          arr.__observer__.off('change:0');
+          break;
+      }
       utils.arrProto[method].apply(this, args);
       buildObj(this, parent);
-      if (method === 'splice') {
-        utils.forEach(utils.range(args[0], args[1]), function(v) {
-          arr.__observer__.trigger('remove:' + v);
-          arr.__observer__.off('set:' + v);
-          arr.__observer__.off('change:' + v);
-        });
-      }
       if (oldL !== this.length) {
         arr.__observer__.trigger('change:length');
       }
@@ -150,7 +162,7 @@ var compile = function(model, $node, scope) {
   }
   hasBind = dom.hasAttribute($node, model.prefix + 'bind');
   hasClass = dom.hasAttribute($node, model.prefix + 'class');
-  hasOn = dom.hasAttribute($node, model.prefix + 'on');
+  hasOn = true;
   hasIf = dom.hasAttribute($node, model.prefix + 'if');
   hasFor = dom.hasAttribute($node, model.prefix + 'for');
   attrs = utils.toArray($node.attributes);
@@ -258,7 +270,7 @@ module.exports = {
     var ocls = $node.getAttribute(model.prefix + 'class'),
         paths = model.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
-      var classObj = utils.runWithScope('(' + ocls + ')', scope);
+      var classObj = utils.runWithScope('({' + ocls + '})', scope);
       utils.forEach(classObj, function(v, cls) {
         if (v === true) {
           $node.classList.add(cls);
@@ -437,11 +449,22 @@ var undefined;
 
 module.exports = {
   compile: function(model, $node, scope) {
-    var oact = $node.getAttribute(model.prefix + 'on'),
-        acl = /(\w+):(.*)/g.exec(oact);
-    if (acl.length === 3) {
-      dom.addEventListener($node, acl[1], function(e) {
-        utils.runWithEvent(acl[2], scope, this, e);
+    var attrs = utils.toArray($node.attributes);
+    utils.forEach(attrs, function(v) {
+      if (v.name.indexOf(model.prefix + 'on-') !== 0) return;
+      var eventName = new RegExp(model.prefix + 'on-' + '(.*)').exec(v.name)[1];
+      var cbkStr = v.value;
+      if (eventName) {
+        dom.addEventListener($node, eventName, function (e) {
+          utils.runWithEvent(cbkStr, scope, this, e);
+        });
+      }
+    });
+    var str = $node.getAttribute(model.prefix + 'on');
+    if (str) {
+      var onObj = utils.runWithScope('{' + str + '}', scope);
+      utils.forEach(onObj, function(cbk, evt) {
+        dom.addEventListener($node, evt, cbk);
       });
     }
   }
@@ -1341,9 +1364,6 @@ function splitPath(paths) {
 function watch(paths, cbk, scope) {
   // scope 很重要
   forEach(splitPath(paths), function(v, k) {
-    if (k === 'countries') {
-      console.log('xxx');
-    }
     try {
       if (k === '*') {
         scope.__observer__.watch(v, cbk);

@@ -11,15 +11,27 @@ function buildArray(arr, parent) {
     arr[method] = function() {
       var oldL = this.length;
       args = utils.toArray(arguments);
+      switch (method) {
+        case 'splice':
+          utils.forEach(utils.range(args[0], args[1]), function(v) {
+            arr.__observer__.trigger('remove:' + v);
+            arr.__observer__.off('set:' + v);
+            arr.__observer__.off('change:' + v);
+          });
+          break;
+        case 'pop':
+          arr.__observer__.trigger('remove:' + (this.length - 1));
+          arr.__observer__.off('set:' + (this.length - 1));
+          arr.__observer__.off('change:' + (this.length - 1));
+          break;
+        case 'shift':
+          arr.__observer__.trigger('remove:0');
+          arr.__observer__.off('set:0');
+          arr.__observer__.off('change:0');
+          break;
+      }
       utils.arrProto[method].apply(this, args);
       buildObj(this, parent);
-      if (method === 'splice') {
-        utils.forEach(utils.range(args[0], args[1]), function(v) {
-          arr.__observer__.trigger('remove:' + v);
-          arr.__observer__.off('set:' + v);
-          arr.__observer__.off('change:' + v);
-        });
-      }
       if (oldL !== this.length) {
         arr.__observer__.trigger('change:length');
       }
