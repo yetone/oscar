@@ -28,7 +28,7 @@ module.exports = {
       dom.removeElement($node);
       for (var key in obj) {
         if (key === '__c__') continue;
-        if (!utils.hasProp.call(obj, key)) continue;
+        if (!utils.hasOwn.call(obj, key)) continue;
         if (isArray && isNaN(+key)) continue;
         kstr = '$key';
         if (isArray) {

@@ -4,7 +4,7 @@ if (typeof window === 'undefined') {
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
-    hasProp = ({}).hasOwnProperty,
+    hasOwn = ({}).hasOwnProperty,
     forEach = arrProto.forEach,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
@@ -37,7 +37,7 @@ var arrProto = window.Array.prototype,
       defs = function(obj, properties) {
         var name;
         for (name in properties) {
-          if (hasProp.call(properties, name)) {
+          if (hasOwn.call(properties, name)) {
             def(obj, name, properties[name]);
           }
         }
@@ -158,7 +158,7 @@ function toArray(obj) {
     var arr = [],
         name;
     for (name in obj) {
-      if (!hasProp.call(obj, name)) continue;
+      if (!hasOwn.call(obj, name)) continue;
       if (!isNaN(+name)) continue;
       arr[+name] = obj[name];
     }
@@ -188,7 +188,7 @@ function _extends(child, parent) {
     this.constructor = child;
   }
   for (var k in parent) {
-    if (hasProp.call(parent, k)) child[k] = parent[k];
+    if (hasOwn.call(parent, k)) child[k] = parent[k];
   }
   fix.prototype = parent.prototype;
   child.prototype = new fix();
@@ -201,7 +201,7 @@ function getWindow() {
 function getObjValues(obj) {
   var acc = [];
   for (var k in obj) {
-    if (!hasProp.call(obj, k)) continue;
+    if (!hasOwn.call(obj, k)) continue;
     // must use push
     acc.push(obj[k]);
   }
@@ -394,7 +394,7 @@ module.exports = {
   arrProto: arrProto,
   strProto: strProto,
   objProto: objProto,
-  hasProp: hasProp,
+  hasOwn: hasOwn,
   forEach: forEach,
   def: def,
   defs: defs,

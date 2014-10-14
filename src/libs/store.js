@@ -51,7 +51,7 @@ var Store = (function() {
     var self = this,
       obj = {};
     for (var k in self.__c__) {
-      if (!utils.hasProp.call(self.__c__, k)) continue;
+      if (!utils.hasOwn.call(self.__c__, k)) continue;
       if (!self.__c__[k] || self.__c__[k].removed) continue;
       obj[k] = self.__c__[k].value;
     }
