@@ -7,8 +7,8 @@ var undefined;
 module.exports = {
   compile: function(model, $node, scope) {
     var ocls = $node.getAttribute(model.prefix + 'class'),
-        bindValues = model.getBindValues('{{' + ocls + '}}', scope);
-    utils.watch(bindValues, function() {
+        paths = model.getPaths('{{' + ocls + '}}', scope);
+    utils.watch(paths, function() {
       var classObj = utils.runWithScope('(' + ocls + ')', scope);
       utils.forEach(classObj, function(v, cls) {
         if (v === true) {

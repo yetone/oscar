@@ -12,23 +12,27 @@ var Observer = (function() {
     this.store = new Store();
   }
   var proto = Observer.prototype;
-  proto.on = function(eventType, cbk) {
+  proto.on = function(eventName, cbk) {
     if (!utils.isFunction(cbk)) {
       throw new TypeError('eventHandler must be a function');
     }
     var self = this;
-    if (!(eventType in self._cbks)) {
-      self._cbks[eventType] = [];
+    if (!(eventName in self._cbks)) {
+      self._cbks[eventName] = [];
     }
-    self._cbks[eventType].push(cbk);
+    self._cbks[eventName].push(cbk);
     return self;
   };
-  proto.off = function(eventType, fun) {
+  proto.off = function(eventName, fun) {
     var self = this;
-    if (!(eventType in self._cbks)) {
+    if (!(eventName in self._cbks)) {
       return self;
     }
-    self._cbks[eventType] = self._cbks[eventType].filter(function(item) {
+    if (!fun) {
+      self._cbks[eventName] = [];
+      return self;
+    }
+    self._cbks[eventName] = self._cbks[eventName].filter(function(item) {
       return item !== fun;
     });
     return self;
@@ -41,6 +45,9 @@ var Observer = (function() {
         cbk && cbk.apply(self._ctx, handlerArgs);
       });
     }
+    if (self.__parent__) {
+      return self.__parent__.trigger('change:*');
+    }
     return self;
   };
   proto.watch = function(el, cbk) {
@@ -51,7 +58,6 @@ var Observer = (function() {
     utils.forEach(el, function(e) {
       self.on('set:' + e, cbk);
       self.on('change:' + e, cbk);
-      self.on('change:length', cbk);
     });
     cbk();
   };

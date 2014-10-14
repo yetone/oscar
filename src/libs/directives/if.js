@@ -13,8 +13,8 @@ module.exports = {
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         removed = false,
-        bindValues = model.getBindValues('{{' + exp + '}}', scope);
-    utils.watch(bindValues, cbk, scope);
+        paths = model.getPaths('{{' + exp + '}}', scope);
+    utils.watch(paths, cbk, scope);
     function cbk() {
       if (utils.runWithScope(exp, scope)) {
         if (!removed) return;

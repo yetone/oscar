@@ -60,36 +60,46 @@ var Observer = require('./observer');
 var utils = require('../utils');
 var undefined;
 
-function buildArray(arr) {
+function buildArray(arr, parent) {
   var args;
   utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
     arr[method] = function() {
       var oldL = this.length;
       args = utils.toArray(arguments);
       utils.arrProto[method].apply(this, args);
-      buildObj(this);
+      buildObj(this, parent);
+      if (method === 'splice') {
+        utils.forEach(utils.range(args[0], args[1]), function(v) {
+          arr.__observer__.trigger('remove:' + v);
+          arr.__observer__.off('set:' + v);
+          arr.__observer__.off('change:' + v);
+        });
+      }
       if (oldL !== this.length) {
         arr.__observer__.trigger('change:length');
       }
     };
   });
-  buildObj(arr);
+  buildObj(arr, parent);
 }
 
-function buildObj(obj) {
+function buildObj(obj, parent) {
   var properties = {};
   if (obj.__observer__ === undefined || obj.__observer__.constructor !== Observer) {
     obj.__observer__ = new Observer(obj);
+    if (parent && parent.__observer__) {
+      obj.__observer__.__parent__ = parent.__observer__;
+    }
   }
   utils.forEach(obj, function(v, k) {
     if (k === '__observer__') return;
     if (typeof v === 'function') return;
     obj.__observer__.store.set(k, v);
     if (utils.isArray(v)) {
-      buildArray(v);
+      buildArray(v, obj);
     }
     if (utils.isObj(v)) {
-      buildObj(v);
+      buildObj(v, obj);
     }
     properties[k] = {
       get: function() {
@@ -97,16 +107,15 @@ function buildObj(obj) {
       },
       set: function(value) {
         if (utils.isArray(value)) {
-          buildArray(value);
+          buildArray(value, obj);
         }
         if (utils.isObj(value)) {
-          buildObj(value);
+          buildObj(value, obj);
         }
         var isNew = (this.__observer__.store.get(k) !== value);
         this.__observer__.store.set(k, value);
         if (isNew) {
           this.__observer__.trigger('change:' + k);
-          this.__observer__.trigger('change:*');
         }
       }
     };
@@ -247,8 +256,8 @@ var undefined;
 module.exports = {
   compile: function(model, $node, scope) {
     var ocls = $node.getAttribute(model.prefix + 'class'),
-        bindValues = model.getBindValues('{{' + ocls + '}}', scope);
-    utils.watch(bindValues, function() {
+        paths = model.getPaths('{{' + ocls + '}}', scope);
+    utils.watch(paths, function() {
       var classObj = utils.runWithScope('(' + ocls + ')', scope);
       utils.forEach(classObj, function(v, cls) {
         if (v === true) {
@@ -280,10 +289,8 @@ module.exports = {
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         acc = [],
         obj,
-        isArray,
-        bindValues;
+        isArray;
     if (!expl || expl.length !== 3) return;
-    bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
     obj = eval('(scope' + utils.genS(expl[2]) + ')');
     isArray = utils.isArray(obj);
     function _replace(str, kstr, key) {
@@ -291,10 +298,10 @@ module.exports = {
       str = utils.replaceEvalStr(str, kstr, '\'' + key + '\'');
       return str;
     }
-    function render() {
+    function _render() {
       var re = /\{\{(.*?)\}\}/g,
           kstr;
-      dom.removeElement($node);
+      !$node.inited && dom.removeElement($node);
       for (var key in obj) {
         if (key === '__observer__') continue;
         if (!utils.hasOwn.call(obj, key)) continue;
@@ -346,7 +353,7 @@ module.exports = {
           });
         }
 
-        if (dom.contains(utils.$DOC, $node)) return;
+        if (dom.contains(utils.$DOC, $node)) continue;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -364,19 +371,17 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        utils.watch(bindValues, function() {
-          var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
-              hasMe = key in dv;
-          if (!hasMe) {
+        obj.__observer__.on('remove:' + key, (function($node) {
+          return function() {
             dom.removeElement($node);
           }
-        }, scope);
+        })($node));
         $node.inited = true;
         model.render($node);
       }
     }
     obj.__observer__.watch('length', function() {
-      render();
+      _render();
     });
   }
 };
@@ -397,8 +402,8 @@ module.exports = {
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         removed = false,
-        bindValues = model.getBindValues('{{' + exp + '}}', scope);
-    utils.watch(bindValues, cbk, scope);
+        paths = model.getPaths('{{' + exp + '}}', scope);
+    utils.watch(paths, cbk, scope);
     function cbk() {
       if (utils.runWithScope(exp, scope)) {
         if (!removed) return;
@@ -636,26 +641,22 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var config = require('../config');
-var Observer = require('./observer');
 var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
 
-var Model = (function(_super) {
-  utils._extends(Model, _super);
+var Model = (function() {
   function Model(obj) {
     this.$el = obj.$el;
     this.tpl = obj.tpl;
     this.data = obj.data;
     this.inited = obj.inited || false;
     this.prefix = obj.prefix || config.PREFIX;
-
-    return Model.__super__.constructor.apply(this, arguments);
   }
   var proto = Model.prototype;
-  proto.getBindValues = function(txt, scope) {
-    var scope = scope || this.data,
-        m = txt.match(/\{\{.*?\}\}/g),
+  proto.getPaths = function(txt, scope) {
+    scope = scope || this.data;
+    var m = txt.match(/\{\{.*?\}\}/g),
         bvs = [],
         pl;
     if (!m) return bvs;
@@ -677,11 +678,11 @@ var Model = (function(_super) {
     compiler.compile(this, $node, scope);
   };
   return Model;
-})(Observer);
+})();
 
 module.exports = Model;
 
-},{"../config":1,"../utils":16,"./compiler":4,"./observer":13}],13:[function(require,module,exports){
+},{"../config":1,"../utils":16,"./compiler":4}],13:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -696,23 +697,27 @@ var Observer = (function() {
     this.store = new Store();
   }
   var proto = Observer.prototype;
-  proto.on = function(eventType, cbk) {
+  proto.on = function(eventName, cbk) {
     if (!utils.isFunction(cbk)) {
       throw new TypeError('eventHandler must be a function');
     }
     var self = this;
-    if (!(eventType in self._cbks)) {
-      self._cbks[eventType] = [];
+    if (!(eventName in self._cbks)) {
+      self._cbks[eventName] = [];
     }
-    self._cbks[eventType].push(cbk);
+    self._cbks[eventName].push(cbk);
     return self;
   };
-  proto.off = function(eventType, fun) {
+  proto.off = function(eventName, fun) {
     var self = this;
-    if (!(eventType in self._cbks)) {
+    if (!(eventName in self._cbks)) {
       return self;
     }
-    self._cbks[eventType] = self._cbks[eventType].filter(function(item) {
+    if (!fun) {
+      self._cbks[eventName] = [];
+      return self;
+    }
+    self._cbks[eventName] = self._cbks[eventName].filter(function(item) {
       return item !== fun;
     });
     return self;
@@ -725,6 +730,9 @@ var Observer = (function() {
         cbk && cbk.apply(self._ctx, handlerArgs);
       });
     }
+    if (self.__parent__) {
+      return self.__parent__.trigger('change:*');
+    }
     return self;
   };
   proto.watch = function(el, cbk) {
@@ -735,7 +743,6 @@ var Observer = (function() {
     utils.forEach(el, function(e) {
       self.on('set:' + e, cbk);
       self.on('change:' + e, cbk);
-      self.on('change:length', cbk);
     });
     cbk();
   };
@@ -1048,6 +1055,20 @@ if (!isFunction(arrProto.has)) {
       this[k] = obj[k];
     }
   };
+  objProto.$watch = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.watch.apply(this.__observer__, arguments);
+  };
+  objProto.$trigger = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.trigger.apply(this.__observer__, arguments);
+  };
+  arrProto.$watch = objProto.$watch;
+  arrProto.$trigger = objProto.$trigger;
 }
 
 function getType(obj) {
@@ -1325,7 +1346,7 @@ function watch(paths, cbk, scope) {
     }
     try {
       if (k === '*') {
-        eval('(scope)').__observer__.watch(v, cbk);
+        scope.__observer__.watch(v, cbk);
       } else {
         eval('(scope' + genS(k) + ')').__observer__.watch(v, cbk);
       }
@@ -1335,10 +1356,10 @@ function watch(paths, cbk, scope) {
   });
 }
 function _bind(model, obj, attr, scope) {
-  var bindValues = model.getBindValues(obj[attr], scope),
-    es = getEvalString(obj[attr]);
+  var paths = model.getPaths(obj[attr], scope),
+      es = getEvalString(obj[attr]);
   if (!es) return;
-  watch(bindValues, function() {
+  watch(paths, function() {
     try {
       obj[attr] = runWithScope(es, scope);
     } catch(e) {

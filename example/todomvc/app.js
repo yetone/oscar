@@ -14,11 +14,6 @@ function onLoad() {
     },
     removeTodo: function(todo) {
       todo.removed = true;
-      if (todo.completed) {
-        data.completedCount -= 1;
-      } else {
-        data.remaining -= 1;
-      }
     },
     completeTodo: function(todo, bool) {
       todo.completed = bool;
@@ -81,8 +76,8 @@ function onLoad() {
         break;
     }
   }
-  model.watch('filter', filter);
-  model.watch('*', function() {
+  data.$watch('filter', filter);
+  data.todos.$watch('*', function() {
     var remaining = 0,
         completedCount = 0;
     data.todos.forEach(function(todo) {
@@ -91,7 +86,7 @@ function onLoad() {
     });
     data.remaining = remaining;
     data.completedCount = completedCount;
-    window.localStorage.setItem('todos-oscarjs', JSON.stringify(data.todos));
+    //window.localStorage.setItem('todos-oscarjs', JSON.stringify(data.todos));
   });
   window.data = data;
   window.model = model;

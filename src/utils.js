@@ -139,6 +139,20 @@ if (!isFunction(arrProto.has)) {
       this[k] = obj[k];
     }
   };
+  objProto.$watch = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.watch.apply(this.__observer__, arguments);
+  };
+  objProto.$trigger = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.trigger.apply(this.__observer__, arguments);
+  };
+  arrProto.$watch = objProto.$watch;
+  arrProto.$trigger = objProto.$trigger;
 }
 
 function getType(obj) {
@@ -416,7 +430,7 @@ function watch(paths, cbk, scope) {
     }
     try {
       if (k === '*') {
-        eval('(scope)').__observer__.watch(v, cbk);
+        scope.__observer__.watch(v, cbk);
       } else {
         eval('(scope' + genS(k) + ')').__observer__.watch(v, cbk);
       }
@@ -426,10 +440,10 @@ function watch(paths, cbk, scope) {
   });
 }
 function _bind(model, obj, attr, scope) {
-  var bindValues = model.getBindValues(obj[attr], scope),
-    es = getEvalString(obj[attr]);
+  var paths = model.getPaths(obj[attr], scope),
+      es = getEvalString(obj[attr]);
   if (!es) return;
-  watch(bindValues, function() {
+  watch(paths, function() {
     try {
       obj[attr] = runWithScope(es, scope);
     } catch(e) {

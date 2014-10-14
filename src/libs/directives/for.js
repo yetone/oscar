@@ -16,10 +16,8 @@ module.exports = {
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         acc = [],
         obj,
-        isArray,
-        bindValues;
+        isArray;
     if (!expl || expl.length !== 3) return;
-    bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
     obj = eval('(scope' + utils.genS(expl[2]) + ')');
     isArray = utils.isArray(obj);
     function _replace(str, kstr, key) {
@@ -27,10 +25,10 @@ module.exports = {
       str = utils.replaceEvalStr(str, kstr, '\'' + key + '\'');
       return str;
     }
-    function render() {
+    function _render() {
       var re = /\{\{(.*?)\}\}/g,
           kstr;
-      dom.removeElement($node);
+      !$node.inited && dom.removeElement($node);
       for (var key in obj) {
         if (key === '__observer__') continue;
         if (!utils.hasOwn.call(obj, key)) continue;
@@ -82,7 +80,7 @@ module.exports = {
           });
         }
 
-        if (dom.contains(utils.$DOC, $node)) return;
+        if (dom.contains(utils.$DOC, $node)) continue;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -100,19 +98,17 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        utils.watch(bindValues, function() {
-          var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
-              hasMe = key in dv;
-          if (!hasMe) {
+        obj.__observer__.on('remove:' + key, (function($node) {
+          return function() {
             dom.removeElement($node);
           }
-        }, scope);
+        })($node));
         $node.inited = true;
         model.render($node);
       }
     }
     obj.__observer__.watch('length', function() {
-      render();
+      _render();
     });
   }
 };
