@@ -36,6 +36,9 @@ window.onload = function() {
     countries: ['China', 'Japan'],
     ok: true
   };
+  window.data5 = {
+    time: new Date() - 0
+  };
   var oscar = new Oscar();
   window.md0 = oscar.modelRegister({
     el: '#model0',
@@ -56,5 +59,9 @@ window.onload = function() {
   window.md4 = oscar.modelRegister({
     el: '#model4',
     data: data4
+  });
+  window.md5 = oscar.modelRegister({
+    el: '#model5',
+    data: data5
   });
 };

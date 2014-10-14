@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8"/>
     <title>example</title>
     <script src="../dist/oscar.js"></script>
     <script src="example.js"></script>
@@ -95,6 +96,10 @@
         <input id="ok" type="checkbox" oscar-bind="ok">
         <label for="ok">{{ ok }}</label>
       </div>
+    </div>
+    <div id="model5">
+      <span>Now: {{time}}</span>
+      <input type="button" oscar-on="click: time = new Date() - 0" value="点我点我"/>
     </div>
   </body>
 </html>
