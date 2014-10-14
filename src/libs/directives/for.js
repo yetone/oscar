@@ -22,6 +22,11 @@ module.exports = {
     bindValues = model.getBindValues('{{' + expl[2] + '}}', scope);
     obj = eval('(scope' + utils.genS(expl[2]) + ')');
     isArray = utils.isArray(obj);
+    function _replace(str, kstr, key) {
+      str = utils.replaceEvalStr(str, expl[1], expl[2] + '[\'' + key + '\']');
+      str = utils.replaceEvalStr(str, kstr, '\'' + key + '\'');
+      return str;
+    }
     function render() {
       var re = /\{\{(.*?)\}\}/g,
           kstr;
@@ -42,8 +47,7 @@ module.exports = {
           (function __($node) {
             if ($node.nodeType === 3) {
               $node.textContent = $node.textContent.replace(re, function(_, a) {
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
+                a = _replace(a, kstr, key);
                 return '{{' + a + '}}';
               });
               return;
@@ -56,8 +60,7 @@ module.exports = {
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
+                a = _replace(a, kstr, key);
                 $node.setAttribute(attr, a);
               }
             });
@@ -66,8 +69,7 @@ module.exports = {
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
-                a = utils.replaceEvalStr(a, expl[1], expl[2] + '[\'' + key + '\']');
-                a = utils.replaceEvalStr(a, kstr, '\'' + key + '\'');
+                a = _replace(a, kstr, key);
                 return '{{' + a + '}}';
               });
             });
