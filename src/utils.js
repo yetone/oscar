@@ -5,7 +5,6 @@ var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
     hasOwn = ({}).hasOwnProperty,
-    forEach = arrProto.forEach,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
@@ -126,6 +125,10 @@ if (!isFunction(arrProto.has)) {
       remove();
       return self;
     }
+  };
+  arrProto.extend = function(a) {
+    arrProto.push.apply(this, a);
+    return this;
   };
   strProto.splice = function(start, length, replacement) {
     replacement = replacement || '';
@@ -377,17 +380,62 @@ function getEventType($node) {
   }
   return eventType;
 }
+function forEach(obj, cbk) {
+  if (isFunction(obj.forEach)) {
+    return obj.forEach(cbk);
+  }
+  for (var k in obj) {
+    if (!hasOwn.call(obj, k)) continue;
+    cbk(obj[k], k);
+  }
+}
+function splitPath(paths) {
+  var obj = {};
+  forEach(paths, function(v) {
+    var idx = v.lastIndexOf('.');
+    if (idx < 0) {
+      if (!obj['*']) {
+        obj['*'] = [];
+      }
+      return obj['*'].push(v);
+    }
+    var key = v.slice(0, idx);
+    var value = v.slice(idx + 1);
+    if (!obj[key]) {
+      obj[key] = [];
+    }
+    obj[key].push(value);
+  });
+  return obj;
+}
+function watch(paths, cbk, scope) {
+  // scope 很重要
+  forEach(splitPath(paths), function(v, k) {
+    if (k === 'countries') {
+      console.log('xxx');
+    }
+    try {
+      if (k === '*') {
+        eval('(scope)').__observer__.watch(v, cbk);
+      } else {
+        eval('(scope' + genS(k) + ')').__observer__.watch(v, cbk);
+      }
+    } catch(e) {
+      console.log(e);
+    }
+  });
+}
 function _bind(model, obj, attr, scope) {
   var bindValues = model.getBindValues(obj[attr], scope),
-      es = getEvalString(obj[attr]);
+    es = getEvalString(obj[attr]);
   if (!es) return;
-  model.watch(bindValues, function() {
+  watch(bindValues, function() {
     try {
       obj[attr] = runWithScope(es, scope);
     } catch(e) {
       console.log(e);
     }
-  });
+  }, scope);
 }
 
 module.exports = {
@@ -417,6 +465,8 @@ module.exports = {
   genS: genS,
   getBind: getBind,
   getEventType: getEventType,
+  splitPath: splitPath,
+  watch: watch,
 
   runWithScope: runWithScope,
   runWithEvent: runWithEvent,

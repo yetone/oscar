@@ -30,7 +30,7 @@ shims.shim();
         tpl: $el.innerHTML,
         data: obj.data
       });
-      builder.buildObj(model.data, model);
+      builder.buildObj(model.data);
       this.modelList.push(model);
       model.render();
       model.inited = true;

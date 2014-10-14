@@ -1,81 +1,61 @@
 /**
  * Created by yetone on 14-10-11.
  */
-var Store = require('./store');
+var Observer = require('./observer');
 var utils = require('../utils');
 var undefined;
 
-function buildArray(arr, model, root) {
-  root = root || '';
+function buildArray(arr) {
   var args;
-  ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
+  utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
     arr[method] = function() {
       var oldL = this.length;
       args = utils.toArray(arguments);
-      // clone arguments
-      var _args = utils.toArray(arguments);
-      if (method === 'splice') {
-        var subArgs = args.slice(2);
-        buildObj([subArgs], model);
-        args = args.slice(0, 2);
-        utils.arrProto.push.apply(args, subArgs);
-      } else {
-        buildObj(args, model);
-      }
       utils.arrProto[method].apply(this, args);
-      this.__c__.apply(method, _args);
-      buildObj(this, model, root);
-      if (model !== undefined) {
-        model.trigger('change:' + root);
-        model.trigger('change:*');
-        if (oldL !== this.length) {
-          model.trigger('change:' + utils.genPath(root, '__index__'));
-        }
+      buildObj(this);
+      if (oldL !== this.length) {
+        arr.__observer__.trigger('change:length');
       }
     };
   });
-  buildObj(arr, model, root);
+  buildObj(arr);
 }
 
-function buildObj(obj, model, root) {
-  root = root || '';
+function buildObj(obj) {
   var properties = {};
-  if (obj.__c__ === undefined || obj.__c__.constructor !== Store) {
-    obj.__c__ = new Store();
+  if (obj.__observer__ === undefined || obj.__observer__.constructor !== Observer) {
+    obj.__observer__ = new Observer(obj);
   }
-  utils.getObjKeys(obj).forEach(function(k) {
-    if (k === '__c__') return;
-    if (typeof obj[k] === 'function') return;
-    obj.__c__.set(k, obj[k]);
-    var path = utils.genPath(root, k);
-    if (utils.isArray(obj[k])) {
-      buildArray(obj[k], model, path);
+  utils.forEach(obj, function(v, k) {
+    if (k === '__observer__') return;
+    if (typeof v === 'function') return;
+    obj.__observer__.store.set(k, v);
+    if (utils.isArray(v)) {
+      buildArray(v);
     }
-    if (utils.isObj(obj[k])) {
-      buildObj(obj[k], model, path);
+    if (utils.isObj(v)) {
+      buildObj(v);
     }
     properties[k] = {
       get: function() {
-        return this.__c__.get(k);
+        return this.__observer__.store.get(k);
       },
-      set: function(v) {
-        if (utils.isArray(v)) {
-          buildArray(v, model, path);
+      set: function(value) {
+        if (utils.isArray(value)) {
+          buildArray(value);
         }
-        if (utils.isObj(v)) {
-          buildObj(v, model, path);
+        if (utils.isObj(value)) {
+          buildObj(value);
         }
-        var isNew = (this.__c__.get(k) !== v);
-        this.__c__.set(k, v);
-        if (model !== undefined && isNew) {
-          model.trigger('change:' + path);
-          model.trigger('change:*');
+        var isNew = (this.__observer__.store.get(k) !== value);
+        this.__observer__.store.set(k, value);
+        if (isNew) {
+          this.__observer__.trigger('change:' + k);
+          this.__observer__.trigger('change:*');
         }
       }
     };
-    if (model !== undefined) {
-      model.trigger('set:' + path);
-    }
+    obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
 }

@@ -26,10 +26,10 @@
       <div>Next year, my age is {{ age + 1 }}.</div>
       <input type="button" oscar-on="click:age++" value="increase age: {{ age }}.">
       <input type="button" oscar-on="click:age--" value="decrease age: {{ age }}.">
-      <input type="text" oscar-bind="skills[1]">
+      <input type="text" oscar-bind="skills[1].value">
       <div>My skills are:</div>
       <ul>
-        <li oscar-for="skill in skills">{{ $index }}: {{ skill }}</li>
+        <li oscar-for="skill in skills">{{ $index }}: {{ skill.value }}</li>
       </ul>
       <input oscar-for="v in dict" type="text" oscar-bind="v">
       <div>Dict:</div>

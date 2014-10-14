@@ -14,12 +14,12 @@ module.exports = {
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {
-      model.watch(path, function() {
+      utils.watch([path], function() {
         var $opts = utils.toArray($node.options);
         $opts.forEach(function($opt) {
           $opt.selected = eval('(scope' + utils.genS(path) + '.indexOf($opt.value) >= 0)');
         });
-      });
+      }, scope);
       if (eventType) {
         dom.addEventListener($node, eventType, function() {
           var $selectedOpts = utils.toArray($node.selectedOptions),
@@ -35,18 +35,13 @@ module.exports = {
         });
       }
     } else {
-      model.watch(path, function() {
+      utils.watch([path], function() {
         if ($node.type === 'radio') {
           $node[bind] = eval('(scope' + utils.genS(path) + ' === $node.value)');
         } else {
           $node[bind] = utils.runWithScope(bindValue, scope);
         }
-      });
-      if (path !== path.split('.')[0]) {
-        model.watch(path.split('.')[0], function() {
-          $node[bind] = utils.runWithScope(bindValue, scope);
-        });
-      }
+      }, scope);
       if (eventType) {
         dom.addEventListener($node, eventType, function() {
           var es;

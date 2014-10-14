@@ -8,15 +8,15 @@ module.exports = {
   compile: function(model, $node, scope) {
     var ocls = $node.getAttribute(model.prefix + 'class'),
         bindValues = model.getBindValues('{{' + ocls + '}}', scope);
-    model.watch(bindValues, function() {
+    utils.watch(bindValues, function() {
       var classObj = utils.runWithScope('(' + ocls + ')', scope);
-      utils.getObjKeys(classObj).forEach(function(cls) {
-        if (classObj[cls] === true) {
+      utils.forEach(classObj, function(v, cls) {
+        if (v === true) {
           $node.classList.add(cls);
         } else {
           $node.classList.remove(cls);
         }
       });
-    });
+    }, scope);
   }
 };

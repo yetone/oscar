@@ -4,9 +4,15 @@ window.onload = function() {
     name: 'yetone',
     age: 23,
     skills: [
-      'Python',
-      'Golang',
-      'JavaScript'
+      {
+        value: 'Python'
+      },
+      {
+        value: 'Golang'
+      },
+      {
+        value: 'JavaScript'
+      }
     ],
     say: function() {
       return 'It works!';

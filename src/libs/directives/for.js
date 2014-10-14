@@ -32,7 +32,7 @@ module.exports = {
           kstr;
       dom.removeElement($node);
       for (var key in obj) {
-        if (key === '__c__') continue;
+        if (key === '__observer__') continue;
         if (!utils.hasOwn.call(obj, key)) continue;
         if (isArray && isNaN(+key)) continue;
         kstr = '$key';
@@ -100,18 +100,18 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        model.watch(bindValues, function() {
+        utils.watch(bindValues, function() {
           var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
               hasMe = key in dv;
           if (!hasMe) {
             dom.removeElement($node);
           }
-        });
+        }, scope);
         $node.inited = true;
         model.render($node);
       }
     }
-    model.watch(bindValues, function() {
+    obj.__observer__.watch('length', function() {
       render();
     });
   }

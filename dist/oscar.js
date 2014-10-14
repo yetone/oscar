@@ -36,7 +36,7 @@ shims.shim();
         tpl: $el.innerHTML,
         data: obj.data
       });
-      builder.buildObj(model.data, model);
+      builder.buildObj(model.data);
       this.modelList.push(model);
       model.render();
       model.inited = true;
@@ -56,81 +56,61 @@ shims.shim();
 /**
  * Created by yetone on 14-10-11.
  */
-var Store = require('./store');
+var Observer = require('./observer');
 var utils = require('../utils');
 var undefined;
 
-function buildArray(arr, model, root) {
-  root = root || '';
+function buildArray(arr) {
   var args;
-  ['push', 'pop', 'shift', 'unshift', 'splice'].forEach(function(method) {
+  utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
     arr[method] = function() {
       var oldL = this.length;
       args = utils.toArray(arguments);
-      // clone arguments
-      var _args = utils.toArray(arguments);
-      if (method === 'splice') {
-        var subArgs = args.slice(2);
-        buildObj([subArgs], model);
-        args = args.slice(0, 2);
-        utils.arrProto.push.apply(args, subArgs);
-      } else {
-        buildObj(args, model);
-      }
       utils.arrProto[method].apply(this, args);
-      this.__c__.apply(method, _args);
-      buildObj(this, model, root);
-      if (model !== undefined) {
-        model.trigger('change:' + root);
-        model.trigger('change:*');
-        if (oldL !== this.length) {
-          model.trigger('change:' + utils.genPath(root, '__index__'));
-        }
+      buildObj(this);
+      if (oldL !== this.length) {
+        arr.__observer__.trigger('change:length');
       }
     };
   });
-  buildObj(arr, model, root);
+  buildObj(arr);
 }
 
-function buildObj(obj, model, root) {
-  root = root || '';
+function buildObj(obj) {
   var properties = {};
-  if (obj.__c__ === undefined || obj.__c__.constructor !== Store) {
-    obj.__c__ = new Store();
+  if (obj.__observer__ === undefined || obj.__observer__.constructor !== Observer) {
+    obj.__observer__ = new Observer(obj);
   }
-  utils.getObjKeys(obj).forEach(function(k) {
-    if (k === '__c__') return;
-    if (typeof obj[k] === 'function') return;
-    obj.__c__.set(k, obj[k]);
-    var path = utils.genPath(root, k);
-    if (utils.isArray(obj[k])) {
-      buildArray(obj[k], model, path);
+  utils.forEach(obj, function(v, k) {
+    if (k === '__observer__') return;
+    if (typeof v === 'function') return;
+    obj.__observer__.store.set(k, v);
+    if (utils.isArray(v)) {
+      buildArray(v);
     }
-    if (utils.isObj(obj[k])) {
-      buildObj(obj[k], model, path);
+    if (utils.isObj(v)) {
+      buildObj(v);
     }
     properties[k] = {
       get: function() {
-        return this.__c__.get(k);
+        return this.__observer__.store.get(k);
       },
-      set: function(v) {
-        if (utils.isArray(v)) {
-          buildArray(v, model, path);
+      set: function(value) {
+        if (utils.isArray(value)) {
+          buildArray(value);
         }
-        if (utils.isObj(v)) {
-          buildObj(v, model, path);
+        if (utils.isObj(value)) {
+          buildObj(value);
         }
-        var isNew = (this.__c__.get(k) !== v);
-        this.__c__.set(k, v);
-        if (model !== undefined && isNew) {
-          model.trigger('change:' + path);
-          model.trigger('change:*');
+        var isNew = (this.__observer__.store.get(k) !== value);
+        this.__observer__.store.set(k, value);
+        if (isNew) {
+          this.__observer__.trigger('change:' + k);
+          this.__observer__.trigger('change:*');
         }
       }
     };
-    if (model !== undefined) {
-      model.trigger('set:' + path);
-    }
+    obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
 }
@@ -139,7 +119,7 @@ module.exports = {
   buildObj: buildObj
 };
 
-},{"../utils":16,"./store":15}],4:[function(require,module,exports){
+},{"../utils":16,"./observer":13}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -214,12 +194,12 @@ module.exports = {
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {
-      model.watch(path, function() {
+      utils.watch([path], function() {
         var $opts = utils.toArray($node.options);
         $opts.forEach(function($opt) {
           $opt.selected = eval('(scope' + utils.genS(path) + '.indexOf($opt.value) >= 0)');
         });
-      });
+      }, scope);
       if (eventType) {
         dom.addEventListener($node, eventType, function() {
           var $selectedOpts = utils.toArray($node.selectedOptions),
@@ -235,18 +215,13 @@ module.exports = {
         });
       }
     } else {
-      model.watch(path, function() {
+      utils.watch([path], function() {
         if ($node.type === 'radio') {
           $node[bind] = eval('(scope' + utils.genS(path) + ' === $node.value)');
         } else {
           $node[bind] = utils.runWithScope(bindValue, scope);
         }
-      });
-      if (path !== path.split('.')[0]) {
-        model.watch(path.split('.')[0], function() {
-          $node[bind] = utils.runWithScope(bindValue, scope);
-        });
-      }
+      }, scope);
       if (eventType) {
         dom.addEventListener($node, eventType, function() {
           var es;
@@ -273,16 +248,16 @@ module.exports = {
   compile: function(model, $node, scope) {
     var ocls = $node.getAttribute(model.prefix + 'class'),
         bindValues = model.getBindValues('{{' + ocls + '}}', scope);
-    model.watch(bindValues, function() {
+    utils.watch(bindValues, function() {
       var classObj = utils.runWithScope('(' + ocls + ')', scope);
-      utils.getObjKeys(classObj).forEach(function(cls) {
-        if (classObj[cls] === true) {
+      utils.forEach(classObj, function(v, cls) {
+        if (v === true) {
           $node.classList.add(cls);
         } else {
           $node.classList.remove(cls);
         }
       });
-    });
+    }, scope);
   }
 };
 
@@ -321,7 +296,7 @@ module.exports = {
           kstr;
       dom.removeElement($node);
       for (var key in obj) {
-        if (key === '__c__') continue;
+        if (key === '__observer__') continue;
         if (!utils.hasOwn.call(obj, key)) continue;
         if (isArray && isNaN(+key)) continue;
         kstr = '$key';
@@ -389,18 +364,18 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        model.watch(bindValues, function() {
+        utils.watch(bindValues, function() {
           var dv = eval('(scope' + utils.genS(expl[2]) + ')'),
               hasMe = key in dv;
           if (!hasMe) {
             dom.removeElement($node);
           }
-        });
+        }, scope);
         $node.inited = true;
         model.render($node);
       }
     }
-    model.watch(bindValues, function() {
+    obj.__observer__.watch('length', function() {
       render();
     });
   }
@@ -417,13 +392,14 @@ var undefined;
 module.exports = {
   compile: function(model, $node, scope) {
     var exp = utils.parseExp($node.getAttribute(model.prefix + 'if')),
-      $tmp = $node,
-      $ps = $node.previousSibling,
-      $ns = $node.nextSibling,
-      $pn = $node.parentNode,
-      removed = false,
-      bindValues = model.getBindValues('{{' + exp + '}}', scope);
-    model.watch(bindValues, function() {
+        $tmp = $node,
+        $ps = $node.previousSibling,
+        $ns = $node.nextSibling,
+        $pn = $node.parentNode,
+        removed = false,
+        bindValues = model.getBindValues('{{' + exp + '}}', scope);
+    utils.watch(bindValues, cbk, scope);
+    function cbk() {
       if (utils.runWithScope(exp, scope)) {
         if (!removed) return;
         var $node0 = $tmp;
@@ -442,7 +418,7 @@ module.exports = {
         dom.removeElement($node);
         removed = true;
       }
-    });
+    }
   }
 };
 
@@ -677,21 +653,23 @@ var Model = (function(_super) {
     return Model.__super__.constructor.apply(this, arguments);
   }
   var proto = Model.prototype;
-  proto.getBindValues = function(txt) {
-    var m = txt.match(/\{\{.*?\}\}/g),
+  proto.getBindValues = function(txt, scope) {
+    var scope = scope || this.data,
+        m = txt.match(/\{\{.*?\}\}/g),
         bvs = [],
         pl;
     if (!m) return bvs;
     m.forEach(function(str) {
       str = str.substr(2, str.length - 4).trim();
       pl = utils.parseEvalStr(str).strL;
-      pl.forEach(function(v) {
-        bvs.add(v);
-        var lst = v.split('.');
-        for (var i = 1; i < lst.length; i++) {
-          bvs.add(lst.slice(0, -i).join('.'));
-        }
-      });
+      bvs.extend(pl);
+    });
+    bvs = bvs.filter(function(v) {
+      try {
+        return eval('(scope' + utils.genS(v) + ' !== undefined)');
+      } catch(e) {
+        return false;
+      }
     });
     return bvs;
   };
@@ -707,12 +685,15 @@ module.exports = Model;
 /**
  * Created by yetone on 14-10-10.
  */
+var Store = require('./store');
 var utils = require('../utils');
 var undefined;
 
 var Observer = (function() {
-  function Observer() {
-    this.eventHandlerObj = {};
+  function Observer(ctx) {
+    this._ctx = ctx || this;
+    this._cbks = {};
+    this.store = new Store();
   }
   var proto = Observer.prototype;
   proto.on = function(eventType, cbk) {
@@ -720,28 +701,28 @@ var Observer = (function() {
       throw new TypeError('eventHandler must be a function');
     }
     var self = this;
-    if (!(eventType in self.eventHandlerObj)) {
-      self.eventHandlerObj[eventType] = [];
+    if (!(eventType in self._cbks)) {
+      self._cbks[eventType] = [];
     }
-    self.eventHandlerObj[eventType].push(cbk);
+    self._cbks[eventType].push(cbk);
     return self;
   };
   proto.off = function(eventType, fun) {
     var self = this;
-    if (!(eventType in self.eventHandlerObj)) {
+    if (!(eventType in self._cbks)) {
       return self;
     }
-    self.eventHandlerObj[eventType] = self.eventHandlerObj[eventType].filter(function(item) {
+    self._cbks[eventType] = self._cbks[eventType].filter(function(item) {
       return item !== fun;
     });
     return self;
   };
   proto.trigger = function(e) {
     var self = this,
-      handlerArgs = utils.arrProto.slice(arguments, 1);
-    if (e in self.eventHandlerObj) {
-      self.eventHandlerObj[e].forEach(function(cbk) {
-        cbk && cbk.apply(self, handlerArgs);
+        handlerArgs = utils.arrProto.slice(arguments, 1);
+    if (e in self._cbks) {
+      utils.forEach(self._cbks[e], function(cbk) {
+        cbk && cbk.apply(self._ctx, handlerArgs);
       });
     }
     return self;
@@ -751,10 +732,10 @@ var Observer = (function() {
     if (utils.isStr(el)) {
       el = el.split(' ');
     }
-    utils.forEach.call(el, function(e) {
+    utils.forEach(el, function(e) {
       self.on('set:' + e, cbk);
       self.on('change:' + e, cbk);
-      self.on('change:' + utils.genPath(e, '__index__'), cbk);
+      self.on('change:length', cbk);
     });
     cbk();
   };
@@ -763,7 +744,7 @@ var Observer = (function() {
 
 module.exports = Observer;
 
-},{"../utils":16}],14:[function(require,module,exports){
+},{"../utils":16,"./store":15}],14:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -933,7 +914,6 @@ var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
     hasOwn = ({}).hasOwnProperty,
-    forEach = arrProto.forEach,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
@@ -1054,6 +1034,10 @@ if (!isFunction(arrProto.has)) {
       remove();
       return self;
     }
+  };
+  arrProto.extend = function(a) {
+    arrProto.push.apply(this, a);
+    return this;
   };
   strProto.splice = function(start, length, replacement) {
     replacement = replacement || '';
@@ -1305,17 +1289,62 @@ function getEventType($node) {
   }
   return eventType;
 }
+function forEach(obj, cbk) {
+  if (isFunction(obj.forEach)) {
+    return obj.forEach(cbk);
+  }
+  for (var k in obj) {
+    if (!hasOwn.call(obj, k)) continue;
+    cbk(obj[k], k);
+  }
+}
+function splitPath(paths) {
+  var obj = {};
+  forEach(paths, function(v) {
+    var idx = v.lastIndexOf('.');
+    if (idx < 0) {
+      if (!obj['*']) {
+        obj['*'] = [];
+      }
+      return obj['*'].push(v);
+    }
+    var key = v.slice(0, idx);
+    var value = v.slice(idx + 1);
+    if (!obj[key]) {
+      obj[key] = [];
+    }
+    obj[key].push(value);
+  });
+  return obj;
+}
+function watch(paths, cbk, scope) {
+  // scope 很重要
+  forEach(splitPath(paths), function(v, k) {
+    if (k === 'countries') {
+      console.log('xxx');
+    }
+    try {
+      if (k === '*') {
+        eval('(scope)').__observer__.watch(v, cbk);
+      } else {
+        eval('(scope' + genS(k) + ')').__observer__.watch(v, cbk);
+      }
+    } catch(e) {
+      console.log(e);
+    }
+  });
+}
 function _bind(model, obj, attr, scope) {
   var bindValues = model.getBindValues(obj[attr], scope),
-      es = getEvalString(obj[attr]);
+    es = getEvalString(obj[attr]);
   if (!es) return;
-  model.watch(bindValues, function() {
+  watch(bindValues, function() {
     try {
       obj[attr] = runWithScope(es, scope);
     } catch(e) {
       console.log(e);
     }
-  });
+  }, scope);
 }
 
 module.exports = {
@@ -1345,6 +1374,8 @@ module.exports = {
   genS: genS,
   getBind: getBind,
   getEventType: getEventType,
+  splitPath: splitPath,
+  watch: watch,
 
   runWithScope: runWithScope,
   runWithEvent: runWithEvent,

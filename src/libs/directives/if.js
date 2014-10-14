@@ -8,13 +8,14 @@ var undefined;
 module.exports = {
   compile: function(model, $node, scope) {
     var exp = utils.parseExp($node.getAttribute(model.prefix + 'if')),
-      $tmp = $node,
-      $ps = $node.previousSibling,
-      $ns = $node.nextSibling,
-      $pn = $node.parentNode,
-      removed = false,
-      bindValues = model.getBindValues('{{' + exp + '}}', scope);
-    model.watch(bindValues, function() {
+        $tmp = $node,
+        $ps = $node.previousSibling,
+        $ns = $node.nextSibling,
+        $pn = $node.parentNode,
+        removed = false,
+        bindValues = model.getBindValues('{{' + exp + '}}', scope);
+    utils.watch(bindValues, cbk, scope);
+    function cbk() {
       if (utils.runWithScope(exp, scope)) {
         if (!removed) return;
         var $node0 = $tmp;
@@ -33,6 +34,6 @@ module.exports = {
         dom.removeElement($node);
         removed = true;
       }
-    });
+    }
   }
 };

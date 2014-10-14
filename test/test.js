@@ -166,5 +166,14 @@ describe('utils', function() {
     str = utils.replaceEvalStr(str, 'name', 'NAME');
     str = utils.replaceEvalStr(str, 'hello', 'HELLO');
     assert.equal(str, '\'name\'+ NAME + AGE + obj[\'AGE\']+"my name is age" + MY["NAME"] + HELLO.world+\'hello my name is age\'')
-  })
+  });
+  describe('splitPath', function() {
+    var paths = ['name', 'xx.yy.zz', 'xx.yy', 'xx.yy.aa', 'xx.bb', 'yy.xx.ii', 'yy.xx.ii.cc', 'yy.xx.oo'];
+    var obj =utils.splitPath(paths);
+    assert.equal('*', obj['name'].join('|'));
+    assert.equal('yy|bb', obj['xx'].join('|'));
+    assert.equal('zz|aa', obj['xx.yy'].join('|'));
+    assert.equal('ii|oo', obj['yy.xx'].join('|'));
+    assert.equal('cc', obj['yy.xx.ii'].join('|'));
+  });
 });

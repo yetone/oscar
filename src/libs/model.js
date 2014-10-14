@@ -19,21 +19,23 @@ var Model = (function(_super) {
     return Model.__super__.constructor.apply(this, arguments);
   }
   var proto = Model.prototype;
-  proto.getBindValues = function(txt) {
-    var m = txt.match(/\{\{.*?\}\}/g),
+  proto.getBindValues = function(txt, scope) {
+    var scope = scope || this.data,
+        m = txt.match(/\{\{.*?\}\}/g),
         bvs = [],
         pl;
     if (!m) return bvs;
     m.forEach(function(str) {
       str = str.substr(2, str.length - 4).trim();
       pl = utils.parseEvalStr(str).strL;
-      pl.forEach(function(v) {
-        bvs.add(v);
-        var lst = v.split('.');
-        for (var i = 1; i < lst.length; i++) {
-          bvs.add(lst.slice(0, -i).join('.'));
-        }
-      });
+      bvs.extend(pl);
+    });
+    bvs = bvs.filter(function(v) {
+      try {
+        return eval('(scope' + utils.genS(v) + ' !== undefined)');
+      } catch(e) {
+        return false;
+      }
     });
     return bvs;
   };
