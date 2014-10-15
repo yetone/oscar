@@ -29,11 +29,11 @@ module.exports = {
       var re = /\{\{(.*?)\}\}/g,
           kstr;
       !$node.inited && dom.removeElement($node);
-      for (var key in obj) {
-        if (key === '__observer__') continue;
-        if (utils.isStr(key) && key.startsWith('$')) continue;
-        if (!utils.hasOwn.call(obj, key)) continue;
-        if (isArray && isNaN(+key)) continue;
+      utils.forEach(obj, function(item, key) {
+        if (key === '__observer__') return;
+        if (utils.isStr(key) && key.startsWith('$')) return;
+        if (!utils.hasOwn.call(obj, key)) return;
+        if (isArray && isNaN(+key)) return;
         kstr = '$key';
         if (isArray) {
           kstr = '$index';
@@ -81,7 +81,7 @@ module.exports = {
           });
         }
 
-        if (dom.contains(utils.$DOC, $node)) continue;
+        if (dom.contains(utils.$DOC, $node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -99,14 +99,15 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        obj.__observer__.on('remove:' + key, (function($node) {
+        obj.__observer__.on('remove:' + key, (function($node, key) {
           return function() {
             dom.removeElement($node);
+            acc[key] = null;
           }
-        })($node));
+        })($node, key));
         $node.inited = true;
         model.render($node);
-      }
+      });
     }
     obj.__observer__.watch('length', function() {
       _render();

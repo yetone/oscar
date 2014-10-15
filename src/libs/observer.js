@@ -1,7 +1,6 @@
 /**
  * Created by yetone on 14-10-10.
  */
-var Store = require('./store');
 var utils = require('../utils');
 var undefined;
 
@@ -9,7 +8,7 @@ var Observer = (function() {
   function Observer(ctx) {
     this._ctx = ctx || this;
     this._cbks = {};
-    this.store = new Store();
+    this.store = {};
   }
   var proto = Observer.prototype;
   proto.on = function(eventName, cbk) {

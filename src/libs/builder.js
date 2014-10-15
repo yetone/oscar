@@ -3,41 +3,56 @@
  */
 var Observer = require('./observer');
 var utils = require('../utils');
+var ArrayProxy = Object.create(utils.arrProto);
+var ObjectProxy = Object.create(utils.objProto);
 var undefined;
 
-function buildArray(arr, parent) {
+utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
   var args;
-  utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
-    arr[method] = function() {
-      var oldL = this.length;
-      args = utils.toArray(arguments);
-      switch (method) {
-        case 'splice':
-          utils.forEach(utils.range(args[0], args[1]), function(v) {
-            arr.__observer__.trigger('remove:' + v);
-            arr.__observer__.off('set:' + v);
-            arr.__observer__.off('change:' + v);
-          });
-          break;
-        case 'pop':
-          arr.__observer__.trigger('remove:' + (this.length - 1));
-          arr.__observer__.off('set:' + (this.length - 1));
-          arr.__observer__.off('change:' + (this.length - 1));
-          break;
-        case 'shift':
-          arr.__observer__.trigger('remove:0');
-          arr.__observer__.off('set:0');
-          arr.__observer__.off('change:0');
-          break;
-      }
-      utils.arrProto[method].apply(this, args);
-      buildObj(this, parent);
-      if (oldL !== this.length) {
-        arr.__observer__.trigger('change:length');
-      }
-    };
-  });
-  buildObj(arr, parent);
+  ArrayProxy[method] = function() {
+    var self = this;
+    var oldL = self.length;
+    args = utils.toArray(arguments);
+    switch (method) {
+      case 'splice':
+        utils.forEach(utils.range(args[0], args[1]), function(v) {
+          self.__observer__.trigger('remove:' + v);
+          self.__observer__.off('set:' + v);
+          self.__observer__.off('change:' + v);
+        });
+        break;
+      case 'pop':
+        self.__observer__.trigger('remove:' + (this.length - 1));
+        self.__observer__.off('set:' + (this.length - 1));
+        self.__observer__.off('change:' + (this.length - 1));
+        break;
+      case 'shift':
+        self.__observer__.trigger('remove:0');
+        self.__observer__.off('set:0');
+        self.__observer__.off('change:0');
+        break;
+    }
+    utils.arrProto[method].apply(this, args);
+    if (oldL !== this.length) {
+      self.__observer__.trigger('change:length');
+    }
+  };
+});
+ObjectProxy.$watch = function() {
+  if (!this.__observer__) {
+    return console.warn('no observer!');
+  }
+  this.__observer__.watch.apply(this.__observer__, arguments);
+};
+ObjectProxy.$trigger = function() {
+  if (!this.__observer__) {
+    return console.warn('no observer!');
+  }
+  this.__observer__.trigger.apply(this.__observer__, arguments);
+};
+
+function canBuild(obj) {
+  return typeof obj === 'object' && obj && !obj.__observer__;
 }
 
 function buildObj(obj, parent) {
@@ -51,27 +66,21 @@ function buildObj(obj, parent) {
   utils.forEach(obj, function(v, k) {
     if (k === '__observer__') return;
     if (utils.isStr(k) && k.startsWith('$')) return;
-    if (typeof v === 'function') return;
-    obj.__observer__.store.set(k, v);
-    if (utils.isArray(v)) {
-      buildArray(v, obj);
-    }
-    if (utils.isObj(v)) {
+    if (utils.isFunction(v)) return;
+    obj.__observer__.store[k] = v;
+    if (canBuild(v)) {
       buildObj(v, obj);
     }
     properties[k] = {
       get: function() {
-        return this.__observer__.store.get(k);
+        return this.__observer__.store[k];
       },
       set: function(value) {
-        if (utils.isArray(value)) {
-          buildArray(value, obj);
-        }
-        if (utils.isObj(value)) {
+        if (canBuild(value)) {
           buildObj(value, obj);
         }
-        var isNew = (this.__observer__.store.get(k) !== value);
-        this.__observer__.store.set(k, value);
+        var isNew = (this.__observer__.store[k] !== value);
+        this.__observer__.store[k] = value;
         if (isNew) {
           this.__observer__.trigger('change:' + k);
         }
@@ -80,18 +89,11 @@ function buildObj(obj, parent) {
     obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
-  obj.$watch = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.watch.apply(this.__observer__, arguments);
-  };
-  obj.$trigger = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.trigger.apply(this.__observer__, arguments);
-  };
+  if (utils.isArray(obj)) {
+    obj.__proto__ = ArrayProxy;
+  } else {
+    obj.__proto__ = ObjectProxy;
+  }
 }
 
 module.exports = {

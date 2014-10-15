@@ -52,47 +52,62 @@ shims.shim();
   })();
 })(utils.WIN);
 
-},{"./libs/builder":3,"./libs/dom":10,"./libs/model":12,"./libs/shims":14,"./utils":16}],3:[function(require,module,exports){
+},{"./libs/builder":3,"./libs/dom":10,"./libs/model":12,"./libs/shims":14,"./utils":15}],3:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
 var Observer = require('./observer');
 var utils = require('../utils');
+var ArrayProxy = Object.create(utils.arrProto);
+var ObjectProxy = Object.create(utils.objProto);
 var undefined;
 
-function buildArray(arr, parent) {
+utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
   var args;
-  utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
-    arr[method] = function() {
-      var oldL = this.length;
-      args = utils.toArray(arguments);
-      switch (method) {
-        case 'splice':
-          utils.forEach(utils.range(args[0], args[1]), function(v) {
-            arr.__observer__.trigger('remove:' + v);
-            arr.__observer__.off('set:' + v);
-            arr.__observer__.off('change:' + v);
-          });
-          break;
-        case 'pop':
-          arr.__observer__.trigger('remove:' + (this.length - 1));
-          arr.__observer__.off('set:' + (this.length - 1));
-          arr.__observer__.off('change:' + (this.length - 1));
-          break;
-        case 'shift':
-          arr.__observer__.trigger('remove:0');
-          arr.__observer__.off('set:0');
-          arr.__observer__.off('change:0');
-          break;
-      }
-      utils.arrProto[method].apply(this, args);
-      buildObj(this, parent);
-      if (oldL !== this.length) {
-        arr.__observer__.trigger('change:length');
-      }
-    };
-  });
-  buildObj(arr, parent);
+  ArrayProxy[method] = function() {
+    var self = this;
+    var oldL = self.length;
+    args = utils.toArray(arguments);
+    switch (method) {
+      case 'splice':
+        utils.forEach(utils.range(args[0], args[1]), function(v) {
+          self.__observer__.trigger('remove:' + v);
+          self.__observer__.off('set:' + v);
+          self.__observer__.off('change:' + v);
+        });
+        break;
+      case 'pop':
+        self.__observer__.trigger('remove:' + (this.length - 1));
+        self.__observer__.off('set:' + (this.length - 1));
+        self.__observer__.off('change:' + (this.length - 1));
+        break;
+      case 'shift':
+        self.__observer__.trigger('remove:0');
+        self.__observer__.off('set:0');
+        self.__observer__.off('change:0');
+        break;
+    }
+    utils.arrProto[method].apply(this, args);
+    if (oldL !== this.length) {
+      self.__observer__.trigger('change:length');
+    }
+  };
+});
+ObjectProxy.$watch = function() {
+  if (!this.__observer__) {
+    return console.warn('no observer!');
+  }
+  this.__observer__.watch.apply(this.__observer__, arguments);
+};
+ObjectProxy.$trigger = function() {
+  if (!this.__observer__) {
+    return console.warn('no observer!');
+  }
+  this.__observer__.trigger.apply(this.__observer__, arguments);
+};
+
+function canBuild(obj) {
+  return typeof obj === 'object' && obj && !obj.__observer__;
 }
 
 function buildObj(obj, parent) {
@@ -106,27 +121,21 @@ function buildObj(obj, parent) {
   utils.forEach(obj, function(v, k) {
     if (k === '__observer__') return;
     if (utils.isStr(k) && k.startsWith('$')) return;
-    if (typeof v === 'function') return;
-    obj.__observer__.store.set(k, v);
-    if (utils.isArray(v)) {
-      buildArray(v, obj);
-    }
-    if (utils.isObj(v)) {
+    if (utils.isFunction(v)) return;
+    obj.__observer__.store[k] = v;
+    if (canBuild(v)) {
       buildObj(v, obj);
     }
     properties[k] = {
       get: function() {
-        return this.__observer__.store.get(k);
+        return this.__observer__.store[k];
       },
       set: function(value) {
-        if (utils.isArray(value)) {
-          buildArray(value, obj);
-        }
-        if (utils.isObj(value)) {
+        if (canBuild(value)) {
           buildObj(value, obj);
         }
-        var isNew = (this.__observer__.store.get(k) !== value);
-        this.__observer__.store.set(k, value);
+        var isNew = (this.__observer__.store[k] !== value);
+        this.__observer__.store[k] = value;
         if (isNew) {
           this.__observer__.trigger('change:' + k);
         }
@@ -135,25 +144,18 @@ function buildObj(obj, parent) {
     obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
-  obj.$watch = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.watch.apply(this.__observer__, arguments);
-  };
-  obj.$trigger = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.trigger.apply(this.__observer__, arguments);
-  };
+  if (utils.isArray(obj)) {
+    obj.__proto__ = ArrayProxy;
+  } else {
+    obj.__proto__ = ObjectProxy;
+  }
 }
 
 module.exports = {
   buildObj: buildObj
 };
 
-},{"../utils":16,"./observer":13}],4:[function(require,module,exports){
+},{"../utils":15,"./observer":13}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -211,7 +213,7 @@ var compile = function(model, $node, scope) {
 module.exports = {
   compile: compile
 };
-},{"../utils":16,"./directives/bind":5,"./directives/class":6,"./directives/for":7,"./directives/if":8,"./directives/on":9,"./dom":10}],5:[function(require,module,exports){
+},{"../utils":15,"./directives/bind":5,"./directives/class":6,"./directives/for":7,"./directives/if":8,"./directives/on":9,"./dom":10}],5:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -271,7 +273,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],6:[function(require,module,exports){
+},{"../../utils":15,"../dom":10}],6:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -295,7 +297,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16}],7:[function(require,module,exports){
+},{"../../utils":15}],7:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -327,11 +329,11 @@ module.exports = {
       var re = /\{\{(.*?)\}\}/g,
           kstr;
       !$node.inited && dom.removeElement($node);
-      for (var key in obj) {
-        if (key === '__observer__') continue;
-        if (utils.isStr(key) && key.startsWith('$')) continue;
-        if (!utils.hasOwn.call(obj, key)) continue;
-        if (isArray && isNaN(+key)) continue;
+      utils.forEach(obj, function(item, key) {
+        if (key === '__observer__') return;
+        if (utils.isStr(key) && key.startsWith('$')) return;
+        if (!utils.hasOwn.call(obj, key)) return;
+        if (isArray && isNaN(+key)) return;
         kstr = '$key';
         if (isArray) {
           kstr = '$index';
@@ -379,7 +381,7 @@ module.exports = {
           });
         }
 
-        if (dom.contains(utils.$DOC, $node)) continue;
+        if (dom.contains(utils.$DOC, $node)) return;
         if ($ns) {
           $pn.insertBefore($node, $ns);
         } else if ($ps && $ps.nextSibling) {
@@ -397,14 +399,15 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        obj.__observer__.on('remove:' + key, (function($node) {
+        obj.__observer__.on('remove:' + key, (function($node, key) {
           return function() {
             dom.removeElement($node);
+            acc[key] = null;
           }
-        })($node));
+        })($node, key));
         $node.inited = true;
         model.render($node);
-      }
+      });
     }
     obj.__observer__.watch('length', function() {
       _render();
@@ -412,7 +415,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],8:[function(require,module,exports){
+},{"../../utils":15,"../dom":10}],8:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -453,7 +456,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],9:[function(require,module,exports){
+},{"../../utils":15,"../dom":10}],9:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -484,7 +487,7 @@ module.exports = {
   }
 };
 
-},{"../../utils":16,"../dom":10}],10:[function(require,module,exports){
+},{"../../utils":15,"../dom":10}],10:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-13.
  */
@@ -719,11 +722,10 @@ var Model = (function() {
 
 module.exports = Model;
 
-},{"../config":1,"../utils":16,"./compiler":4}],13:[function(require,module,exports){
+},{"../config":1,"../utils":15,"./compiler":4}],13:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
-var Store = require('./store');
 var utils = require('../utils');
 var undefined;
 
@@ -731,7 +733,7 @@ var Observer = (function() {
   function Observer(ctx) {
     this._ctx = ctx || this;
     this._cbks = {};
-    this.store = new Store();
+    this.store = {};
   }
   var proto = Observer.prototype;
   proto.on = function(eventName, cbk) {
@@ -788,7 +790,7 @@ var Observer = (function() {
 
 module.exports = Observer;
 
-},{"../utils":16,"./store":15}],14:[function(require,module,exports){
+},{"../utils":15}],14:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -870,87 +872,7 @@ module.exports = {
   shim: shim
 };
 
-},{"../utils":16}],15:[function(require,module,exports){
-/**
- * Created by yetone on 14-10-10.
- */
-var utils = require('../utils');
-var undefined;
-
-var Store = (function() {
-  function Store() {
-    this.__c__ = {
-      length: {
-        value: 0
-      }
-    };
-  }
-  var proto = Store.prototype;
-  proto.set = function(k, v) {
-    var self = this,
-      len = self.__c__['length'].value;
-    self.__c__[k] = {
-      value: v
-    };
-    self.setIndex(k, len);
-    self.__c__['length'].value++;
-  };
-  proto.get = function(k) {
-    var self = this,
-      c = self.__c__[k];
-    if (!c || c.removed) return undefined;
-    return c.value;
-  };
-  proto.remove = function(k) {
-    var self = this,
-      c = self.__c__[k];
-    if (!c) return false;
-    c.removed = true;
-    self.__c__['length'].value--;
-  };
-  proto.setIndex = function(k, idx) {
-    var self = this,
-      c = self.__c__[k];
-    if (!c || c.removed) return false;
-    c.index = idx;
-  };
-  proto.getIndex = function(k) {
-    var self = this,
-      c = self.__c__[k];
-    if (!c || c.removed) return undefined;
-    return c.index;
-  };
-  proto.toObj = function() {
-    var self = this,
-      obj = {};
-    for (var k in self.__c__) {
-      if (!utils.hasOwn.call(self.__c__, k)) continue;
-      if (!self.__c__[k] || self.__c__[k].removed) continue;
-      obj[k] = self.__c__[k].value;
-    }
-    return obj;
-  };
-  proto.toArray = function() {
-    var self = this,
-      obj = self.toObj();
-    return utils.toArray(obj);
-  };
-  proto.fixIndex = function() {
-    var self = this,
-      i = 0;
-    utils.forEach.call(self.toArray(), function(v, k) {
-      self.setIndex(k, i++);
-    });
-  };
-  proto.apply = function() {
-    return '大杀器';
-  };
-  return Store;
-})();
-
-module.exports = Store;
-
-},{"../utils":16}],16:[function(require,module,exports){
+},{"../utils":15}],15:[function(require,module,exports){
 if (typeof window === 'undefined') {
   window = getWindow();
 }
