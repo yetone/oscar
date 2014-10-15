@@ -56,18 +56,17 @@ var arrProto = window.Array.prototype,
 
   if (!getObjKeys) {
     getObjKeys = (function() {
-      var hasOwnProperty = Object.prototype.hasOwnProperty,
-        hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
-        dontEnums = [
-          'toString',
-          'toLocaleString',
-          'valueOf',
-          'hasOwnProperty',
-          'isPrototypeOf',
-          'propertyIsEnumerable',
-          'constructor'
-        ],
-        dontEnumsLength = dontEnums.length;
+      var hasDontEnumBug = !({ toString: null }).propertyIsEnumerable('toString'),
+          dontEnums = [
+            'toString',
+            'toLocaleString',
+            'valueOf',
+            'hasOwnProperty',
+            'isPrototypeOf',
+            'propertyIsEnumerable',
+            'constructor'
+          ],
+          dontEnumsLength = dontEnums.length;
 
       return function(obj) {
         if (typeof obj !== 'object' && (typeof obj !== 'function' || obj === null)) {
@@ -77,14 +76,14 @@ var arrProto = window.Array.prototype,
         var result = [], prop, i;
 
         for (prop in obj) {
-          if (hasOwnProperty.call(obj, prop)) {
+          if (hasOwn.call(obj, prop)) {
             result.push(prop);
           }
         }
 
         if (hasDontEnumBug) {
           for (i = 0; i < dontEnumsLength; i++) {
-            if (hasOwnProperty.call(obj, dontEnums[i])) {
+            if (hasOwn.call(obj, dontEnums[i])) {
               result.push(dontEnums[i]);
             }
           }
