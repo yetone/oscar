@@ -105,6 +105,7 @@ function buildObj(obj, parent) {
   }
   utils.forEach(obj, function(v, k) {
     if (k === '__observer__') return;
+    if (utils.isStr(k) && k.startsWith('$')) return;
     if (typeof v === 'function') return;
     obj.__observer__.store.set(k, v);
     if (utils.isArray(v)) {
@@ -134,6 +135,18 @@ function buildObj(obj, parent) {
     obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
+  obj.$watch = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.watch.apply(this.__observer__, arguments);
+  };
+  obj.$trigger = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.trigger.apply(this.__observer__, arguments);
+  };
 }
 
 module.exports = {
@@ -316,6 +329,7 @@ module.exports = {
       !$node.inited && dom.removeElement($node);
       for (var key in obj) {
         if (key === '__observer__') continue;
+        if (utils.isStr(key) && key.startsWith('$')) continue;
         if (!utils.hasOwn.call(obj, key)) continue;
         if (isArray && isNaN(+key)) continue;
         kstr = '$key';
@@ -1073,25 +1087,17 @@ if (!isFunction(arrProto.has)) {
     replacement = replacement || '';
     return this.substr(0, start) + replacement + this.substr(start + length);
   };
+  strProto.startsWith = function(str) {
+    return this.indexOf(str) === 0;
+  };
+  strProto.endsWith = function(str) {
+    return this.lastIndexOf(str) === this.length - str.length;
+  };
   objProto.extend = function(obj) {
     for (var k in obj) {
       this[k] = obj[k];
     }
   };
-  objProto.$watch = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.watch.apply(this.__observer__, arguments);
-  };
-  objProto.$trigger = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.trigger.apply(this.__observer__, arguments);
-  };
-  arrProto.$watch = objProto.$watch;
-  arrProto.$trigger = objProto.$trigger;
 }
 
 function getType(obj) {

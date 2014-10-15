@@ -134,25 +134,17 @@ if (!isFunction(arrProto.has)) {
     replacement = replacement || '';
     return this.substr(0, start) + replacement + this.substr(start + length);
   };
+  strProto.startsWith = function(str) {
+    return this.indexOf(str) === 0;
+  };
+  strProto.endsWith = function(str) {
+    return this.lastIndexOf(str) === this.length - str.length;
+  };
   objProto.extend = function(obj) {
     for (var k in obj) {
       this[k] = obj[k];
     }
   };
-  objProto.$watch = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.watch.apply(this.__observer__, arguments);
-  };
-  objProto.$trigger = function() {
-    if (!this.__observer__) {
-      return console.warn('no observer!');
-    }
-    this.__observer__.trigger.apply(this.__observer__, arguments);
-  };
-  arrProto.$watch = objProto.$watch;
-  arrProto.$trigger = objProto.$trigger;
 }
 
 function getType(obj) {

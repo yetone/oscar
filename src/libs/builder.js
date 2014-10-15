@@ -50,6 +50,7 @@ function buildObj(obj, parent) {
   }
   utils.forEach(obj, function(v, k) {
     if (k === '__observer__') return;
+    if (utils.isStr(k) && k.startsWith('$')) return;
     if (typeof v === 'function') return;
     obj.__observer__.store.set(k, v);
     if (utils.isArray(v)) {
@@ -79,6 +80,18 @@ function buildObj(obj, parent) {
     obj.__observer__.trigger('set:' + k);
   });
   utils.defs(obj, properties);
+  obj.$watch = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.watch.apply(this.__observer__, arguments);
+  };
+  obj.$trigger = function() {
+    if (!this.__observer__) {
+      return console.warn('no observer!');
+    }
+    this.__observer__.trigger.apply(this.__observer__, arguments);
+  };
 }
 
 module.exports = {

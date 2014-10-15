@@ -31,6 +31,7 @@ module.exports = {
       !$node.inited && dom.removeElement($node);
       for (var key in obj) {
         if (key === '__observer__') continue;
+        if (utils.isStr(key) && key.startsWith('$')) continue;
         if (!utils.hasOwn.call(obj, key)) continue;
         if (isArray && isNaN(+key)) continue;
         kstr = '$key';
