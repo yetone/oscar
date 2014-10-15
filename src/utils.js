@@ -440,6 +440,14 @@ function _bind(model, obj, attr, scope) {
     }
   }, scope);
 }
+function defProtected(obj, key, value, enumerable, writable) {
+  def(obj, key, {
+    value: value,
+    enumerable: enumerable,
+    writable: writable,
+    configurable: true
+  })
+}
 
 module.exports = {
   arrProto: arrProto,
@@ -470,6 +478,8 @@ module.exports = {
   getEventType: getEventType,
   splitPath: splitPath,
   watch: watch,
+
+  defProtected: defProtected,
 
   runWithScope: runWithScope,
   runWithEvent: runWithEvent,

@@ -14,7 +14,6 @@ module.exports = {
         $cns = $node.childNodes,
         exp = $node.getAttribute(model.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-        acc = [],
         obj,
         isArray;
     if (!expl || expl.length !== 3) return;
@@ -30,17 +29,15 @@ module.exports = {
           kstr;
       !$node.inited && dom.removeElement($node);
       utils.forEach(obj, function(item, key) {
-        if (key === '__observer__') return;
-        if (utils.isStr(key) && key.startsWith('$')) return;
+        if (utils.isStr(key) && ['$', '_'].indexOf(key.charAt(0)) > -1) return;
         if (!utils.hasOwn.call(obj, key)) return;
         if (isArray && isNaN(+key)) return;
         kstr = '$key';
         if (isArray) {
           kstr = '$index';
         }
-        if (acc[key]) {
-          $node = acc[key]['$node'];
-        } else {
+        $node = item.$el;
+        if (!$node) {
           $node = $tmp.cloneNode(true);
           // 起名什么的最讨厌了！
           (function __($node) {
@@ -76,9 +73,7 @@ module.exports = {
               __($n);
             });
           })($node);
-          acc.push({
-            $node: $node
-          });
+          item.$el = $node;
         }
 
         if (dom.contains(utils.$DOC, $node)) return;
@@ -99,12 +94,11 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        obj.__observer__.on('remove:' + key, (function($node, key) {
+        obj.__observer__.on('remove:' + key, (function($node) {
           return function() {
             dom.removeElement($node);
-            acc[key] = null;
           }
-        })($node, key));
+        })($node));
         $node.inited = true;
         model.render($node);
       });

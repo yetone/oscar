@@ -64,12 +64,19 @@ var undefined;
 
 utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
   var args;
-  ArrayProxy[method] = function() {
+  utils.defProtected(ArrayProxy, method, function() {
     var self = this;
     var oldL = self.length;
+    var idx;
+    var removed;
+    if (self.__idx__ === undefined) {
+      self.__idx__ = 0;
+    }
     args = utils.toArray(arguments);
+    removed = utils.arrProto[method].apply(this, args);
     switch (method) {
       case 'splice':
+        if (!removed) break;
         utils.forEach(utils.range(args[0], args[1]), function(v) {
           self.__observer__.trigger('remove:' + v);
           self.__observer__.off('set:' + v);
@@ -77,50 +84,61 @@ utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
         });
         break;
       case 'pop':
+        if (!removed) break;
         self.__observer__.trigger('remove:' + (this.length - 1));
         self.__observer__.off('set:' + (this.length - 1));
         self.__observer__.off('change:' + (this.length - 1));
         break;
       case 'shift':
-        self.__observer__.trigger('remove:0');
-        self.__observer__.off('set:0');
-        self.__observer__.off('change:0');
+        if (!removed) break;
+        idx = self.__idx__++;
+        self.__observer__.trigger('remove:' + idx);
+        self.__observer__.off('set:' + idx);
+        self.__observer__.off('change:' + idx);
+        break;
+      case 'unshift':
+        if (!removed) break;
+        self.__idx__ = 0;
         break;
     }
-    utils.arrProto[method].apply(this, args);
+    buildObj(self, self.__parent__);
     if (oldL !== this.length) {
       self.__observer__.trigger('change:length');
     }
-  };
+  });
 });
-ObjectProxy.$watch = function() {
+utils.defProtected(ObjectProxy, '$watch', function() {
   if (!this.__observer__) {
     return console.warn('no observer!');
   }
   this.__observer__.watch.apply(this.__observer__, arguments);
-};
-ObjectProxy.$trigger = function() {
+});
+utils.defProtected(ObjectProxy, '$trigger', function() {
   if (!this.__observer__) {
     return console.warn('no observer!');
   }
   this.__observer__.trigger.apply(this.__observer__, arguments);
-};
+});
 
 function canBuild(obj) {
   return typeof obj === 'object' && obj && !obj.__observer__;
 }
 
 function buildObj(obj, parent) {
+  if (!obj.__parent__) {
+    obj.__parent__ = parent;
+  }
   var properties = {};
-  if (obj.__observer__ === undefined || obj.__observer__.constructor !== Observer) {
-    obj.__observer__ = new Observer(obj);
+  if (!obj.__observer__) {
+    obj.__observer__ = undefined; // idea's bug
+    var observer = new Observer(obj);
     if (parent && parent.__observer__) {
-      obj.__observer__.__parent__ = parent.__observer__;
+      observer.__parent__ = parent.__observer__;
     }
+    utils.defProtected(obj, '__observer__', observer);
   }
   utils.forEach(obj, function(v, k) {
-    if (k === '__observer__') return;
-    if (utils.isStr(k) && k.startsWith('$')) return;
+    if (utils.isStr(k) && ['$', '_'].indexOf(k.charAt(0)) > -1) return;
     if (utils.isFunction(v)) return;
     obj.__observer__.store[k] = v;
     if (canBuild(v)) {
@@ -314,7 +332,6 @@ module.exports = {
         $cns = $node.childNodes,
         exp = $node.getAttribute(model.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
-        acc = [],
         obj,
         isArray;
     if (!expl || expl.length !== 3) return;
@@ -330,17 +347,15 @@ module.exports = {
           kstr;
       !$node.inited && dom.removeElement($node);
       utils.forEach(obj, function(item, key) {
-        if (key === '__observer__') return;
-        if (utils.isStr(key) && key.startsWith('$')) return;
+        if (utils.isStr(key) && ['$', '_'].indexOf(key.charAt(0)) > -1) return;
         if (!utils.hasOwn.call(obj, key)) return;
         if (isArray && isNaN(+key)) return;
         kstr = '$key';
         if (isArray) {
           kstr = '$index';
         }
-        if (acc[key]) {
-          $node = acc[key]['$node'];
-        } else {
+        $node = item.$el;
+        if (!$node) {
           $node = $tmp.cloneNode(true);
           // 起名什么的最讨厌了！
           (function __($node) {
@@ -376,9 +391,7 @@ module.exports = {
               __($n);
             });
           })($node);
-          acc.push({
-            $node: $node
-          });
+          item.$el = $node;
         }
 
         if (dom.contains(utils.$DOC, $node)) return;
@@ -399,12 +412,11 @@ module.exports = {
         attrs.forEach(function(v) {
           utils._bind(model, v, 'value', scope);
         });
-        obj.__observer__.on('remove:' + key, (function($node, key) {
+        obj.__observer__.on('remove:' + key, (function($node) {
           return function() {
             dom.removeElement($node);
-            acc[key] = null;
           }
-        })($node, key));
+        })($node));
         $node.inited = true;
         model.render($node);
       });
@@ -1315,6 +1327,14 @@ function _bind(model, obj, attr, scope) {
     }
   }, scope);
 }
+function defProtected(obj, key, value, enumerable, writable) {
+  def(obj, key, {
+    value: value,
+    enumerable: enumerable,
+    writable: writable,
+    configurable: true
+  })
+}
 
 module.exports = {
   arrProto: arrProto,
@@ -1345,6 +1365,8 @@ module.exports = {
   getEventType: getEventType,
   splitPath: splitPath,
   watch: watch,
+
+  defProtected: defProtected,
 
   runWithScope: runWithScope,
   runWithEvent: runWithEvent,
