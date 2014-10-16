@@ -181,15 +181,23 @@ function range(s, e, d) {
   }
   return acc;
 }
-function extend(a, b) {
+function mix(a, b) {
   var obj = {};
   for (var k in a) {
     obj[k] = a[k];
   }
   for (var k in b) {
-    obj[k] = a[k];
+    obj[k] = b[k];
   }
   return obj;
+}
+function extend(a, b) {
+  for (var key in b) {
+    if (a[key] !== b[key]) {
+      a[key] = b[key];
+    }
+  }
+  return a;
 }
 function _extends(child, parent) {
   function fix() {
@@ -476,6 +484,8 @@ module.exports = {
 
   _bind: _bind,
   _extends: _extends,
+  extend: extend,
+  mix: mix,
   getWindow: getWindow,
 
   isIE: isIE,

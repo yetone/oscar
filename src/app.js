@@ -1,5 +1,4 @@
 var ViewModel = require('./libs/viewmodel'),
-    builder = require('./libs/builder'),
     shims = require('./libs/shims'),
     dom = require('./libs/dom'),
     utils = require('./utils');
@@ -22,9 +21,8 @@ shims.shim();
         $el: $el,
         data: obj.data
       });
-      builder.buildObj(vm.data);
       vm.render();
-      vm.inited = true;
+      vm.$inited = true;
       return vm;
     }
     return Oscar;

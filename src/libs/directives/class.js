@@ -6,7 +6,7 @@ var undefined;
 
 module.exports = {
   compile: function(vm, $node, scope) {
-    var ocls = $node.getAttribute(vm.prefix + 'class'),
+    var ocls = $node.getAttribute(vm.$prefix + 'class'),
         paths = vm.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
       var classObj = utils.runWithScope('({' + ocls + '})', scope);

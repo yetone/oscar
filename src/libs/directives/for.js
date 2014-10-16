@@ -12,7 +12,7 @@ module.exports = {
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         $cns = $node.childNodes,
-        exp = $node.getAttribute(vm.prefix + 'for'),
+        exp = $node.getAttribute(vm.$prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         obj,
         isArray;
@@ -52,7 +52,7 @@ module.exports = {
                 attrs = utils.toArray($node.attributes),
                 $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
-              var attr = vm.prefix + _attr,
+              var attr = vm.$prefix + _attr,
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
@@ -61,7 +61,7 @@ module.exports = {
               }
             });
             attrs = attrs.filter(function(v) {
-              return v.name.indexOf(vm.prefix) !== 0;
+              return v.name.indexOf(vm.$prefix) !== 0;
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
@@ -89,7 +89,7 @@ module.exports = {
         $pn = $node.parentNode;
         $cns = $node.childNodes;
         var attrs = utils.toArray($node.attributes).filter(function(v) {
-          return v.name.indexOf(vm.prefix) !== 0;
+          return v.name.indexOf(vm.$prefix) !== 0;
         });
         attrs.forEach(function(v) {
           utils._bind(vm, v, 'value', scope);

@@ -7,7 +7,7 @@ var undefined;
 
 module.exports = {
   compile: function(vm, $node, scope) {
-    var exp = utils.parseExp($node.getAttribute(vm.prefix + 'if')),
+    var exp = utils.parseExp($node.getAttribute(vm.$prefix + 'if')),
         $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,

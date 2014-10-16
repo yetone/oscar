@@ -5,7 +5,6 @@ module.exports = {
 };
 },{}],2:[function(require,module,exports){
 var ViewModel = require('./libs/viewmodel'),
-    builder = require('./libs/builder'),
     shims = require('./libs/shims'),
     dom = require('./libs/dom'),
     utils = require('./utils');
@@ -28,16 +27,15 @@ shims.shim();
         $el: $el,
         data: obj.data
       });
-      builder.buildObj(vm.data);
       vm.render();
-      vm.inited = true;
+      vm.$inited = true;
       return vm;
     }
     return Oscar;
   })();
 })(utils.WIN);
 
-},{"./libs/builder":3,"./libs/dom":10,"./libs/shims":13,"./libs/viewmodel":14,"./utils":15}],3:[function(require,module,exports){
+},{"./libs/dom":10,"./libs/shims":13,"./libs/viewmodel":14,"./utils":15}],3:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -173,19 +171,19 @@ var undefined;
 
 var compile = function(vm, $node, scope) {
   $node = $node || vm.$el;
-  scope = scope || vm.data;
+  scope = scope || vm.$data;
   var bind, hasBind, hasClass, hasOn, hasIf, hasFor, attrs;
   if ($node.nodeType === 3) {
     return utils._bind(vm, $node, 'textContent', scope);
   }
-  hasBind = dom.hasAttribute($node, vm.prefix + 'bind');
-  hasClass = dom.hasAttribute($node, vm.prefix + 'class');
+  hasBind = dom.hasAttribute($node, vm.$prefix + 'bind');
+  hasClass = dom.hasAttribute($node, vm.$prefix + 'class');
   hasOn = true;
-  hasIf = dom.hasAttribute($node, vm.prefix + 'if');
-  hasFor = dom.hasAttribute($node, vm.prefix + 'for');
+  hasIf = dom.hasAttribute($node, vm.$prefix + 'if');
+  hasFor = dom.hasAttribute($node, vm.$prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
-    return v.name.indexOf(vm.prefix) !== 0;
+    return v.name.indexOf(vm.$prefix) !== 0;
   });
   if (hasFor && !$node.inited) {
     forDirective.compile(vm, $node, scope);
@@ -229,7 +227,7 @@ module.exports = {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
         multiple = dom.hasAttribute($node, 'multiple'),
-        bindValue = $node.getAttribute(vm.prefix + 'bind'),
+        bindValue = $node.getAttribute(vm.$prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {
@@ -285,7 +283,7 @@ var undefined;
 
 module.exports = {
   compile: function(vm, $node, scope) {
-    var ocls = $node.getAttribute(vm.prefix + 'class'),
+    var ocls = $node.getAttribute(vm.$prefix + 'class'),
         paths = vm.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
       var classObj = utils.runWithScope('({' + ocls + '})', scope);
@@ -315,7 +313,7 @@ module.exports = {
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         $cns = $node.childNodes,
-        exp = $node.getAttribute(vm.prefix + 'for'),
+        exp = $node.getAttribute(vm.$prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         obj,
         isArray;
@@ -355,7 +353,7 @@ module.exports = {
                 attrs = utils.toArray($node.attributes),
                 $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
-              var attr = vm.prefix + _attr,
+              var attr = vm.$prefix + _attr,
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
@@ -364,7 +362,7 @@ module.exports = {
               }
             });
             attrs = attrs.filter(function(v) {
-              return v.name.indexOf(vm.prefix) !== 0;
+              return v.name.indexOf(vm.$prefix) !== 0;
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
@@ -392,7 +390,7 @@ module.exports = {
         $pn = $node.parentNode;
         $cns = $node.childNodes;
         var attrs = utils.toArray($node.attributes).filter(function(v) {
-          return v.name.indexOf(vm.prefix) !== 0;
+          return v.name.indexOf(vm.$prefix) !== 0;
         });
         attrs.forEach(function(v) {
           utils._bind(vm, v, 'value', scope);
@@ -422,7 +420,7 @@ var undefined;
 
 module.exports = {
   compile: function(vm, $node, scope) {
-    var exp = utils.parseExp($node.getAttribute(vm.prefix + 'if')),
+    var exp = utils.parseExp($node.getAttribute(vm.$prefix + 'if')),
         $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,
@@ -465,8 +463,8 @@ module.exports = {
   compile: function(vm, $node, scope) {
     var attrs = utils.toArray($node.attributes);
     utils.forEach(attrs, function(v) {
-      if (v.name.indexOf(vm.prefix + 'on-') !== 0) return;
-      var eventName = new RegExp(vm.prefix + 'on-' + '(.*)').exec(v.name)[1];
+      if (v.name.indexOf(vm.$prefix + 'on-') !== 0) return;
+      var eventName = new RegExp(vm.$prefix + 'on-' + '(.*)').exec(v.name)[1];
       var cbkStr = v.value;
       if (eventName) {
         dom.addEventListener($node, eventName, function (e) {
@@ -474,7 +472,7 @@ module.exports = {
         });
       }
     });
-    var str = $node.getAttribute(vm.prefix + 'on');
+    var str = $node.getAttribute(vm.$prefix + 'on');
     if (str) {
       var onObj = utils.runWithScope('{' + str + '}', scope);
       utils.forEach(onObj, function(cbk, evt) {
@@ -828,6 +826,7 @@ module.exports = {
  * Created by yetone on 14-10-10.
  */
 var config = require('../config');
+var builder = require('./builder');
 var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
@@ -835,13 +834,14 @@ var undefined;
 var ViewModel = (function() {
   function ViewModel(obj) {
     this.$el = obj.$el;
-    this.data = obj.data;
-    this.inited = obj.inited || false;
-    this.prefix = obj.prefix || config.PREFIX;
+    this.$data = obj.data;
+    this.$inited = obj.inited || false;
+    this.$prefix = obj.prefix || config.PREFIX;
+    builder.buildObj(obj.data);
   }
   var proto = ViewModel.prototype;
   proto.getPaths = function(txt, scope) {
-    scope = scope || this.data;
+    scope = scope || this.$data;
     var m = txt.match(/\{\{.*?\}\}/g),
         bvs = [],
         pl;
@@ -868,7 +868,7 @@ var ViewModel = (function() {
 
 module.exports = ViewModel;
 
-},{"../config":1,"../utils":15,"./compiler":4}],15:[function(require,module,exports){
+},{"../config":1,"../utils":15,"./builder":3,"./compiler":4}],15:[function(require,module,exports){
 if (typeof window === 'undefined') {
   window = getWindow();
 }
@@ -1052,15 +1052,23 @@ function range(s, e, d) {
   }
   return acc;
 }
-function extend(a, b) {
+function mix(a, b) {
   var obj = {};
   for (var k in a) {
     obj[k] = a[k];
   }
   for (var k in b) {
-    obj[k] = a[k];
+    obj[k] = b[k];
   }
   return obj;
+}
+function extend(a, b) {
+  for (var key in b) {
+    if (a[key] !== b[key]) {
+      a[key] = b[key];
+    }
+  }
+  return a;
 }
 function _extends(child, parent) {
   function fix() {
@@ -1347,6 +1355,8 @@ module.exports = {
 
   _bind: _bind,
   _extends: _extends,
+  extend: extend,
+  mix: mix,
   getWindow: getWindow,
 
   isIE: isIE,

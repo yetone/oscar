@@ -2,6 +2,7 @@
  * Created by yetone on 14-10-10.
  */
 var config = require('../config');
+var builder = require('./builder');
 var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
@@ -9,13 +10,14 @@ var undefined;
 var ViewModel = (function() {
   function ViewModel(obj) {
     this.$el = obj.$el;
-    this.data = obj.data;
-    this.inited = obj.inited || false;
-    this.prefix = obj.prefix || config.PREFIX;
+    this.$data = obj.data;
+    this.$inited = obj.inited || false;
+    this.$prefix = obj.prefix || config.PREFIX;
+    builder.buildObj(obj.data);
   }
   var proto = ViewModel.prototype;
   proto.getPaths = function(txt, scope) {
-    scope = scope || this.data;
+    scope = scope || this.$data;
     var m = txt.match(/\{\{.*?\}\}/g),
         bvs = [],
         pl;

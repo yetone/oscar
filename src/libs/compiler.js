@@ -12,19 +12,19 @@ var undefined;
 
 var compile = function(vm, $node, scope) {
   $node = $node || vm.$el;
-  scope = scope || vm.data;
+  scope = scope || vm.$data;
   var bind, hasBind, hasClass, hasOn, hasIf, hasFor, attrs;
   if ($node.nodeType === 3) {
     return utils._bind(vm, $node, 'textContent', scope);
   }
-  hasBind = dom.hasAttribute($node, vm.prefix + 'bind');
-  hasClass = dom.hasAttribute($node, vm.prefix + 'class');
+  hasBind = dom.hasAttribute($node, vm.$prefix + 'bind');
+  hasClass = dom.hasAttribute($node, vm.$prefix + 'class');
   hasOn = true;
-  hasIf = dom.hasAttribute($node, vm.prefix + 'if');
-  hasFor = dom.hasAttribute($node, vm.prefix + 'for');
+  hasIf = dom.hasAttribute($node, vm.$prefix + 'if');
+  hasFor = dom.hasAttribute($node, vm.$prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
-    return v.name.indexOf(vm.prefix) !== 0;
+    return v.name.indexOf(vm.$prefix) !== 0;
   });
   if (hasFor && !$node.inited) {
     forDirective.compile(vm, $node, scope);

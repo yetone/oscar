@@ -10,7 +10,7 @@ module.exports = {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
         multiple = dom.hasAttribute($node, 'multiple'),
-        bindValue = $node.getAttribute(vm.prefix + 'bind'),
+        bindValue = $node.getAttribute(vm.$prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {
