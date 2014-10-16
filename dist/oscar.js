@@ -875,7 +875,7 @@ if (typeof window === 'undefined') {
 var arrProto = window.Array.prototype,
     strProto = window.String.prototype,
     objProto = window.Object.prototype,
-    hasOwn = ({}).hasOwnProperty,
+    hasOwn = {}.hasOwnProperty,
     def = window.Object.defineProperty,
     defs = window.Object.defineProperties,
     getObjKeys = window.Object.keys,
