@@ -1155,7 +1155,7 @@ function parseEvalStr(txt) {
   if (_str) {
     strL.push(_str);
   }
-  obj['strL'] = strL;
+  obj.strL = strL;
   return obj;
 }
 function replaceEvalStr(txt, searchstr, newstr) {
