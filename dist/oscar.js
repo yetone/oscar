@@ -1077,15 +1077,6 @@ function _extends(child, parent) {
 function getWindow() {
   return (new Function('return this;'))();
 }
-function getObjValues(obj) {
-  var acc = [];
-  for (var k in obj) {
-    if (!hasOwn.call(obj, k)) continue;
-    // must use push
-    acc.push(obj[k]);
-  }
-  return acc;
-}
 function parseEvalStr(txt) {
   var acc = [],
       strL = [],
