@@ -4,7 +4,7 @@ module.exports = {
   PREFIX: 'oscar-'
 };
 },{}],2:[function(require,module,exports){
-var Model = require('./libs/model'),
+var ViewModel = require('./libs/viewmodel'),
     builder = require('./libs/builder'),
     shims = require('./libs/shims'),
     dom = require('./libs/dom'),
@@ -14,45 +14,30 @@ var Model = require('./libs/model'),
 shims.shim();
 (function(window, undefined) {
   window.Oscar = (function() {
-    function Oscar() {
-      this.modelList = [];
-      this.__init__();
-    }
-    var proto = Oscar.prototype;
-    proto.__init__ = function() {
-    };
-    proto.modelRegister = function(obj) {
+    function Oscar(obj) {
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
-        throw new TypeError('invalid model type');
+        throw new TypeError('invalid vm type');
       }
       var $els = dom.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
       var $el = $els[0],
-          model;
-      model = new Model({
+          vm;
+      vm = new ViewModel({
         $el: $el,
-        tpl: $el.innerHTML,
         data: obj.data
       });
-      builder.buildObj(model.data);
-      this.modelList.push(model);
-      model.render();
-      model.inited = true;
-      return model;
-    };
-    proto.watcher = function() {
-      var self = this;
-      self.modelList.forEach(function(model) {
-        model.render();
-      });
-    };
+      builder.buildObj(vm.data);
+      vm.render();
+      vm.inited = true;
+      return vm;
+    }
     return Oscar;
   })();
 })(utils.WIN);
 
-},{"./libs/builder":3,"./libs/dom":10,"./libs/model":12,"./libs/shims":14,"./utils":15}],3:[function(require,module,exports){
+},{"./libs/builder":3,"./libs/dom":10,"./libs/shims":13,"./libs/viewmodel":14,"./utils":15}],3:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -173,7 +158,7 @@ module.exports = {
   buildObj: buildObj
 };
 
-},{"../utils":15,"./observer":13}],4:[function(require,module,exports){
+},{"../utils":15,"./observer":12}],4:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-10.
  */
@@ -186,44 +171,44 @@ var dom = require('./dom');
 var utils = require('../utils');
 var undefined;
 
-var compile = function(model, $node, scope) {
-  $node = $node || model.$el;
-  scope = scope || model.data;
+var compile = function(vm, $node, scope) {
+  $node = $node || vm.$el;
+  scope = scope || vm.data;
   var bind, hasBind, hasClass, hasOn, hasIf, hasFor, attrs;
   if ($node.nodeType === 3) {
-    return utils._bind(model, $node, 'textContent', scope);
+    return utils._bind(vm, $node, 'textContent', scope);
   }
-  hasBind = dom.hasAttribute($node, model.prefix + 'bind');
-  hasClass = dom.hasAttribute($node, model.prefix + 'class');
+  hasBind = dom.hasAttribute($node, vm.prefix + 'bind');
+  hasClass = dom.hasAttribute($node, vm.prefix + 'class');
   hasOn = true;
-  hasIf = dom.hasAttribute($node, model.prefix + 'if');
-  hasFor = dom.hasAttribute($node, model.prefix + 'for');
+  hasIf = dom.hasAttribute($node, vm.prefix + 'if');
+  hasFor = dom.hasAttribute($node, vm.prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
-    return v.name.indexOf(model.prefix) !== 0;
+    return v.name.indexOf(vm.prefix) !== 0;
   });
   if (hasFor && !$node.inited) {
-    forDirective.compile(model, $node, scope);
+    forDirective.compile(vm, $node, scope);
     return;
   }
   attrs.forEach(function(v) {
-    utils._bind(model, v, 'value', scope);
+    utils._bind(vm, v, 'value', scope);
   });
   if (hasBind) {
-    bindDirective.compile(model, $node, scope);
+    bindDirective.compile(vm, $node, scope);
   }
   if (hasClass) {
-    classDirective.compile(model, $node, scope);
+    classDirective.compile(vm, $node, scope);
   }
   if (hasOn) {
-    onDirective.compile(model, $node, scope);
+    onDirective.compile(vm, $node, scope);
   }
   if (hasIf) {
-    ifDirective.compile(model, $node, scope);
+    ifDirective.compile(vm, $node, scope);
   }
   if (dom.contains(utils.$DOC, $node)) {
     utils.toArray($node.childNodes).forEach(function($node) {
-      compile(model, $node);
+      compile(vm, $node);
     });
   }
 };
@@ -240,11 +225,11 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
         multiple = dom.hasAttribute($node, 'multiple'),
-        bindValue = $node.getAttribute(model.prefix + 'bind'),
+        bindValue = $node.getAttribute(vm.prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {
@@ -299,9 +284,9 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
-    var ocls = $node.getAttribute(model.prefix + 'class'),
-        paths = model.getPaths('{{' + ocls + '}}', scope);
+  compile: function(vm, $node, scope) {
+    var ocls = $node.getAttribute(vm.prefix + 'class'),
+        paths = vm.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
       var classObj = utils.runWithScope('({' + ocls + '})', scope);
       utils.forEach(classObj, function(v, cls) {
@@ -324,13 +309,13 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         $cns = $node.childNodes,
-        exp = $node.getAttribute(model.prefix + 'for'),
+        exp = $node.getAttribute(vm.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         obj,
         isArray;
@@ -370,7 +355,7 @@ module.exports = {
                 attrs = utils.toArray($node.attributes),
                 $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
-              var attr = model.prefix + _attr,
+              var attr = vm.prefix + _attr,
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
@@ -379,7 +364,7 @@ module.exports = {
               }
             });
             attrs = attrs.filter(function(v) {
-              return v.name.indexOf(model.prefix) !== 0;
+              return v.name.indexOf(vm.prefix) !== 0;
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
@@ -407,10 +392,10 @@ module.exports = {
         $pn = $node.parentNode;
         $cns = $node.childNodes;
         var attrs = utils.toArray($node.attributes).filter(function(v) {
-          return v.name.indexOf(model.prefix) !== 0;
+          return v.name.indexOf(vm.prefix) !== 0;
         });
         attrs.forEach(function(v) {
-          utils._bind(model, v, 'value', scope);
+          utils._bind(vm, v, 'value', scope);
         });
         obj.__observer__.on('remove:' + key, (function($node) {
           return function() {
@@ -418,7 +403,7 @@ module.exports = {
           }
         })($node));
         $node.inited = true;
-        model.render($node);
+        vm.render($node);
       });
     }
     obj.__observer__.watch('length', function() {
@@ -436,14 +421,14 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
-    var exp = utils.parseExp($node.getAttribute(model.prefix + 'if')),
+  compile: function(vm, $node, scope) {
+    var exp = utils.parseExp($node.getAttribute(vm.prefix + 'if')),
         $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         removed = false,
-        paths = model.getPaths('{{' + exp + '}}', scope);
+        paths = vm.getPaths('{{' + exp + '}}', scope);
     utils.watch(paths, cbk, scope);
     function cbk() {
       if (utils.runWithScope(exp, scope)) {
@@ -456,7 +441,7 @@ module.exports = {
         } else if ($pn) {
           $pn.appendChild($node0);
         }
-        model.render($node0, null, true);
+        vm.render($node0, null, true);
         $node = $node0;
         $tmp = $node;
         removed = false;
@@ -477,11 +462,11 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var attrs = utils.toArray($node.attributes);
     utils.forEach(attrs, function(v) {
-      if (v.name.indexOf(model.prefix + 'on-') !== 0) return;
-      var eventName = new RegExp(model.prefix + 'on-' + '(.*)').exec(v.name)[1];
+      if (v.name.indexOf(vm.prefix + 'on-') !== 0) return;
+      var eventName = new RegExp(vm.prefix + 'on-' + '(.*)').exec(v.name)[1];
       var cbkStr = v.value;
       if (eventName) {
         dom.addEventListener($node, eventName, function (e) {
@@ -489,7 +474,7 @@ module.exports = {
         });
       }
     });
-    var str = $node.getAttribute(model.prefix + 'on');
+    var str = $node.getAttribute(vm.prefix + 'on');
     if (str) {
       var onObj = utils.runWithScope('{' + str + '}', scope);
       utils.forEach(onObj, function(cbk, evt) {
@@ -692,52 +677,6 @@ module.exports = {
 /**
  * Created by yetone on 14-10-10.
  */
-var config = require('../config');
-var compiler = require('./compiler');
-var utils = require('../utils');
-var undefined;
-
-var Model = (function() {
-  function Model(obj) {
-    this.$el = obj.$el;
-    this.tpl = obj.tpl;
-    this.data = obj.data;
-    this.inited = obj.inited || false;
-    this.prefix = obj.prefix || config.PREFIX;
-  }
-  var proto = Model.prototype;
-  proto.getPaths = function(txt, scope) {
-    scope = scope || this.data;
-    var m = txt.match(/\{\{.*?\}\}/g),
-        bvs = [],
-        pl;
-    if (!m) return bvs;
-    m.forEach(function(str) {
-      str = str.substr(2, str.length - 4).trim();
-      pl = utils.parseEvalStr(str).strL;
-      bvs.extend(pl);
-    });
-    bvs = bvs.filter(function(v) {
-      try {
-        return eval('(scope' + utils.genS(v) + ' !== undefined)');
-      } catch(e) {
-        return false;
-      }
-    });
-    return bvs;
-  };
-  proto.render = function($node, scope) {
-    compiler.compile(this, $node, scope);
-  };
-  return Model;
-})();
-
-module.exports = Model;
-
-},{"../config":1,"../utils":15,"./compiler":4}],13:[function(require,module,exports){
-/**
- * Created by yetone on 14-10-10.
- */
 var utils = require('../utils');
 var undefined;
 
@@ -802,7 +741,7 @@ var Observer = (function() {
 
 module.exports = Observer;
 
-},{"../utils":15}],14:[function(require,module,exports){
+},{"../utils":15}],13:[function(require,module,exports){
 /**
  * Created by yetone on 14-10-11.
  */
@@ -884,7 +823,52 @@ module.exports = {
   shim: shim
 };
 
-},{"../utils":15}],15:[function(require,module,exports){
+},{"../utils":15}],14:[function(require,module,exports){
+/**
+ * Created by yetone on 14-10-10.
+ */
+var config = require('../config');
+var compiler = require('./compiler');
+var utils = require('../utils');
+var undefined;
+
+var ViewModel = (function() {
+  function ViewModel(obj) {
+    this.$el = obj.$el;
+    this.data = obj.data;
+    this.inited = obj.inited || false;
+    this.prefix = obj.prefix || config.PREFIX;
+  }
+  var proto = ViewModel.prototype;
+  proto.getPaths = function(txt, scope) {
+    scope = scope || this.data;
+    var m = txt.match(/\{\{.*?\}\}/g),
+        bvs = [],
+        pl;
+    if (!m) return bvs;
+    m.forEach(function(str) {
+      str = str.substr(2, str.length - 4).trim();
+      pl = utils.parseEvalStr(str).strL;
+      bvs.extend(pl);
+    });
+    bvs = bvs.filter(function(v) {
+      try {
+        return eval('(scope' + utils.genS(v) + ' !== undefined)');
+      } catch(e) {
+        return false;
+      }
+    });
+    return bvs;
+  };
+  proto.render = function($node, scope) {
+    compiler.compile(this, $node, scope);
+  };
+  return ViewModel;
+})();
+
+module.exports = ViewModel;
+
+},{"../config":1,"../utils":15,"./compiler":4}],15:[function(require,module,exports){
 if (typeof window === 'undefined') {
   window = getWindow();
 }
@@ -1314,8 +1298,8 @@ function watch(paths, cbk, scope) {
     }
   });
 }
-function _bind(model, obj, attr, scope) {
-  var paths = model.getPaths(obj[attr], scope),
+function _bind(vm, obj, attr, scope) {
+  var paths = vm.getPaths(obj[attr], scope),
       es = getEvalString(obj[attr]);
   if (!es) return;
   watch(paths, function() {

@@ -45,28 +45,27 @@ window.onload = function() {
   window.data5 = {
     time: new Date() - 0
   };
-  var oscar = new Oscar();
-  window.md0 = oscar.modelRegister({
+  window.md0 = new Oscar({
     el: '#model0',
     data: data0
   });
-  window.md1 = oscar.modelRegister({
+  window.md1 = new Oscar({
     el: '#model1',
     data: data1
   });
-  window.md2 = oscar.modelRegister({
+  window.md2 = new Oscar({
     el: '#model2',
     data: data2
   });
-  window.md3 = oscar.modelRegister({
+  window.md3 = new Oscar({
     el: '#model3',
     data: data3
   });
-  window.md4 = oscar.modelRegister({
+  window.md4 = new Oscar({
     el: '#model4',
     data: data4
   });
-  window.md5 = oscar.modelRegister({
+  window.md5 = new Oscar({
     el: '#model5',
     data: data5
   });

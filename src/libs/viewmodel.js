@@ -6,15 +6,14 @@ var compiler = require('./compiler');
 var utils = require('../utils');
 var undefined;
 
-var Model = (function() {
-  function Model(obj) {
+var ViewModel = (function() {
+  function ViewModel(obj) {
     this.$el = obj.$el;
-    this.tpl = obj.tpl;
     this.data = obj.data;
     this.inited = obj.inited || false;
     this.prefix = obj.prefix || config.PREFIX;
   }
-  var proto = Model.prototype;
+  var proto = ViewModel.prototype;
   proto.getPaths = function(txt, scope) {
     scope = scope || this.data;
     var m = txt.match(/\{\{.*?\}\}/g),
@@ -38,7 +37,7 @@ var Model = (function() {
   proto.render = function($node, scope) {
     compiler.compile(this, $node, scope);
   };
-  return Model;
+  return ViewModel;
 })();
 
-module.exports = Model;
+module.exports = ViewModel;

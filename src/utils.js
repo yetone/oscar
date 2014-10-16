@@ -427,8 +427,8 @@ function watch(paths, cbk, scope) {
     }
   });
 }
-function _bind(model, obj, attr, scope) {
-  var paths = model.getPaths(obj[attr], scope),
+function _bind(vm, obj, attr, scope) {
+  var paths = vm.getPaths(obj[attr], scope),
       es = getEvalString(obj[attr]);
   if (!es) return;
   watch(paths, function() {

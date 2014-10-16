@@ -6,11 +6,11 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var attrs = utils.toArray($node.attributes);
     utils.forEach(attrs, function(v) {
-      if (v.name.indexOf(model.prefix + 'on-') !== 0) return;
-      var eventName = new RegExp(model.prefix + 'on-' + '(.*)').exec(v.name)[1];
+      if (v.name.indexOf(vm.prefix + 'on-') !== 0) return;
+      var eventName = new RegExp(vm.prefix + 'on-' + '(.*)').exec(v.name)[1];
       var cbkStr = v.value;
       if (eventName) {
         dom.addEventListener($node, eventName, function (e) {
@@ -18,7 +18,7 @@ module.exports = {
         });
       }
     });
-    var str = $node.getAttribute(model.prefix + 'on');
+    var str = $node.getAttribute(vm.prefix + 'on');
     if (str) {
       var onObj = utils.runWithScope('{' + str + '}', scope);
       utils.forEach(onObj, function(cbk, evt) {

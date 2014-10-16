@@ -6,11 +6,11 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var bind = utils.getBind($node),
         eventType = utils.getEventType($node),
         multiple = dom.hasAttribute($node, 'multiple'),
-        bindValue = $node.getAttribute(model.prefix + 'bind'),
+        bindValue = $node.getAttribute(vm.prefix + 'bind'),
         path = utils.genPath(bindValue);
     if (!bind) return;
     if (multiple) {

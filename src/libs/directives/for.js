@@ -6,13 +6,13 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
+  compile: function(vm, $node, scope) {
     var $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         $cns = $node.childNodes,
-        exp = $node.getAttribute(model.prefix + 'for'),
+        exp = $node.getAttribute(vm.prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
         obj,
         isArray;
@@ -52,7 +52,7 @@ module.exports = {
                 attrs = utils.toArray($node.attributes),
                 $cns = utils.toArray($node.childNodes);
             oscarAttrs.forEach(function(_attr) {
-              var attr = model.prefix + _attr,
+              var attr = vm.prefix + _attr,
                 a;
               if (dom.hasAttribute($node, attr)) {
                 a = $node.getAttribute(attr);
@@ -61,7 +61,7 @@ module.exports = {
               }
             });
             attrs = attrs.filter(function(v) {
-              return v.name.indexOf(model.prefix) !== 0;
+              return v.name.indexOf(vm.prefix) !== 0;
             });
             attrs.forEach(function(v) {
               v.value = v.value.replace(re, function(_, a) {
@@ -89,10 +89,10 @@ module.exports = {
         $pn = $node.parentNode;
         $cns = $node.childNodes;
         var attrs = utils.toArray($node.attributes).filter(function(v) {
-          return v.name.indexOf(model.prefix) !== 0;
+          return v.name.indexOf(vm.prefix) !== 0;
         });
         attrs.forEach(function(v) {
-          utils._bind(model, v, 'value', scope);
+          utils._bind(vm, v, 'value', scope);
         });
         obj.__observer__.on('remove:' + key, (function($node) {
           return function() {
@@ -100,7 +100,7 @@ module.exports = {
           }
         })($node));
         $node.inited = true;
-        model.render($node);
+        vm.render($node);
       });
     }
     obj.__observer__.watch('length', function() {

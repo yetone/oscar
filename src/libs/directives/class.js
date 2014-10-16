@@ -5,9 +5,9 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
-    var ocls = $node.getAttribute(model.prefix + 'class'),
-        paths = model.getPaths('{{' + ocls + '}}', scope);
+  compile: function(vm, $node, scope) {
+    var ocls = $node.getAttribute(vm.prefix + 'class'),
+        paths = vm.getPaths('{{' + ocls + '}}', scope);
     utils.watch(paths, function() {
       var classObj = utils.runWithScope('({' + ocls + '})', scope);
       utils.forEach(classObj, function(v, cls) {

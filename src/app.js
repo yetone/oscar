@@ -1,4 +1,4 @@
-var Model = require('./libs/model'),
+var ViewModel = require('./libs/viewmodel'),
     builder = require('./libs/builder'),
     shims = require('./libs/shims'),
     dom = require('./libs/dom'),
@@ -8,40 +8,25 @@ var Model = require('./libs/model'),
 shims.shim();
 (function(window, undefined) {
   window.Oscar = (function() {
-    function Oscar() {
-      this.modelList = [];
-      this.__init__();
-    }
-    var proto = Oscar.prototype;
-    proto.__init__ = function() {
-    };
-    proto.modelRegister = function(obj) {
+    function Oscar(obj) {
       if (typeof obj !== 'object' || typeof obj.el !== 'string' ||  typeof obj.data !== 'object') {
-        throw new TypeError('invalid model type');
+        throw new TypeError('invalid vm type');
       }
       var $els = dom.querySelectorAll(utils.$DOC, obj.el);
       if (!$els.length) {
         throw new Error('cannot find the element');
       }
       var $el = $els[0],
-          model;
-      model = new Model({
+          vm;
+      vm = new ViewModel({
         $el: $el,
-        tpl: $el.innerHTML,
         data: obj.data
       });
-      builder.buildObj(model.data);
-      this.modelList.push(model);
-      model.render();
-      model.inited = true;
-      return model;
-    };
-    proto.watcher = function() {
-      var self = this;
-      self.modelList.forEach(function(model) {
-        model.render();
-      });
-    };
+      builder.buildObj(vm.data);
+      vm.render();
+      vm.inited = true;
+      return vm;
+    }
     return Oscar;
   })();
 })(utils.WIN);

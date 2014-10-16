@@ -6,14 +6,14 @@ var utils = require('../../utils');
 var undefined;
 
 module.exports = {
-  compile: function(model, $node, scope) {
-    var exp = utils.parseExp($node.getAttribute(model.prefix + 'if')),
+  compile: function(vm, $node, scope) {
+    var exp = utils.parseExp($node.getAttribute(vm.prefix + 'if')),
         $tmp = $node,
         $ps = $node.previousSibling,
         $ns = $node.nextSibling,
         $pn = $node.parentNode,
         removed = false,
-        paths = model.getPaths('{{' + exp + '}}', scope);
+        paths = vm.getPaths('{{' + exp + '}}', scope);
     utils.watch(paths, cbk, scope);
     function cbk() {
       if (utils.runWithScope(exp, scope)) {
@@ -26,7 +26,7 @@ module.exports = {
         } else if ($pn) {
           $pn.appendChild($node0);
         }
-        model.render($node0, null, true);
+        vm.render($node0, null, true);
         $node = $node0;
         $tmp = $node;
         removed = false;

@@ -10,44 +10,44 @@ var dom = require('./dom');
 var utils = require('../utils');
 var undefined;
 
-var compile = function(model, $node, scope) {
-  $node = $node || model.$el;
-  scope = scope || model.data;
+var compile = function(vm, $node, scope) {
+  $node = $node || vm.$el;
+  scope = scope || vm.data;
   var bind, hasBind, hasClass, hasOn, hasIf, hasFor, attrs;
   if ($node.nodeType === 3) {
-    return utils._bind(model, $node, 'textContent', scope);
+    return utils._bind(vm, $node, 'textContent', scope);
   }
-  hasBind = dom.hasAttribute($node, model.prefix + 'bind');
-  hasClass = dom.hasAttribute($node, model.prefix + 'class');
+  hasBind = dom.hasAttribute($node, vm.prefix + 'bind');
+  hasClass = dom.hasAttribute($node, vm.prefix + 'class');
   hasOn = true;
-  hasIf = dom.hasAttribute($node, model.prefix + 'if');
-  hasFor = dom.hasAttribute($node, model.prefix + 'for');
+  hasIf = dom.hasAttribute($node, vm.prefix + 'if');
+  hasFor = dom.hasAttribute($node, vm.prefix + 'for');
   attrs = utils.toArray($node.attributes);
   attrs = attrs.filter(function(v) {
-    return v.name.indexOf(model.prefix) !== 0;
+    return v.name.indexOf(vm.prefix) !== 0;
   });
   if (hasFor && !$node.inited) {
-    forDirective.compile(model, $node, scope);
+    forDirective.compile(vm, $node, scope);
     return;
   }
   attrs.forEach(function(v) {
-    utils._bind(model, v, 'value', scope);
+    utils._bind(vm, v, 'value', scope);
   });
   if (hasBind) {
-    bindDirective.compile(model, $node, scope);
+    bindDirective.compile(vm, $node, scope);
   }
   if (hasClass) {
-    classDirective.compile(model, $node, scope);
+    classDirective.compile(vm, $node, scope);
   }
   if (hasOn) {
-    onDirective.compile(model, $node, scope);
+    onDirective.compile(vm, $node, scope);
   }
   if (hasIf) {
-    ifDirective.compile(model, $node, scope);
+    ifDirective.compile(vm, $node, scope);
   }
   if (dom.contains(utils.$DOC, $node)) {
     utils.toArray($node.childNodes).forEach(function($node) {
-      compile(model, $node);
+      compile(vm, $node);
     });
   }
 };
