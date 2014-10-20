@@ -80,7 +80,6 @@ module.exports = {
       attrs.forEach(function(v) {
         utils._bind(vm, v, 'value', scope);
       });
-      $node.inited = true;
 
       if (item.$el) {
         dom.removeElement(item.$el);
@@ -88,6 +87,8 @@ module.exports = {
       $pn.insertBefore($node, obj.$endCmt);
       item.$el = $node;
       acc[key] = $node;
+
+      $node.inited = true;
       vm.render($node);
     }
     function _iterate() {

@@ -12,8 +12,8 @@ function onLoad() {
     editTodo: function(todo) {
       todo.editing = true;
     },
-    removeTodo: function(todo) {
-      todo.removed = true;
+    removeTodo: function(idx) {
+      data.todos.splice(idx, 1);
     },
     completeTodo: function(todo, bool) {
       todo.completed = bool;
@@ -34,24 +34,23 @@ function onLoad() {
       data.todos.forEach(function(todo) {
         todo.completed && (data.removeTodo(todo));
       });
+    },
+    addTodo: function(e) {
+      if (e.keyCode === 13) {
+        var title = this.value;
+        var todo = {
+          title: title,
+          hide: false,
+          completed: false,
+          editing: false,
+          removed: false
+        };
+        data.todos.push(todo);
+        this.value = '';
+      }
     }
   };
-  document.getElementById('new-todo').addEventListener('keydown', function(e) {
-    if (e.keyCode === 13) {
-      var title = this.value;
-      var todo = {
-        title: title,
-        hide: false,
-        completed: false,
-        editing: false,
-        removed: false
-      };
-      data.todos.push(todo);
-      this.value = '';
-    }
-  });
-  var oscar = new Oscar();
-  var model = oscar.modelRegister({
+  var vm = new Oscar({
     el: '#todoapp',
     data: data
   });
@@ -77,19 +76,8 @@ function onLoad() {
     }
   }
   data.$watch('filter', filter);
-  data.todos.$watch('*', function() {
-    var remaining = 0,
-        completedCount = 0;
-    data.todos.forEach(function(todo) {
-      if (!todo.removed && !todo.completed) remaining++;
-      if (!todo.removed && todo.completed) completedCount++;
-    });
-    data.remaining = remaining;
-    data.completedCount = completedCount;
-    //window.localStorage.setItem('todos-oscarjs', JSON.stringify(data.todos));
-  });
   window.data = data;
-  window.model = model;
+  window.vm = vm;
 }
 
 window.onload = onLoad;
