@@ -326,7 +326,7 @@ module.exports = {
             $cns = utils.toArray($node.childNodes);
         oscarAttrs.forEach(function(_attr) {
           var attr = vm.$prefix + _attr,
-            a;
+              a;
           if (dom.hasAttribute($node, attr)) {
             a = $node.getAttribute(attr);
             a = _replace(a, kstr, key);
