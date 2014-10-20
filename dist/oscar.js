@@ -838,7 +838,7 @@ var ViewModel = (function() {
 module.exports = ViewModel;
 
 },{"../config":1,"../utils":15,"./builder":3,"./compiler":4}],15:[function(require,module,exports){
-if (typeof window === 'undefined') {
+if (typeof window === 'undefined' || window.window !== window) {
   window = getWindow();
 }
 var arrProto = window.Array.prototype,
