@@ -446,6 +446,32 @@ function defProtected(obj, key, value, enumerable, writable) {
     configurable: true
   })
 }
+function diff(a, b) {
+  // a is new, b is old
+  var res = {
+    add: [],
+    remove: [],
+    change: []
+  };
+  for (var key in a) {
+    if (!(key in b)) {
+      res.add.push(key);
+    } else if (a[key] !== b[key]) {
+      res.change.add(key);
+    }
+  }
+  for (var key in b) {
+    if (!(key in a)) {
+      res.remove.push(key);
+    } else if (a[key] !== b[key]) {
+      res.change.add(key);
+    }
+  }
+  return res;
+}
+var nextTick = window.setImmediate ? setImmediate.bind(window) : function(callback) {
+  setTimeout(callback, 0);
+};
 
 module.exports = {
   arrProto: arrProto,
@@ -487,6 +513,8 @@ module.exports = {
   extend: extend,
   mix: mix,
   getWindow: getWindow,
+  nextTick: nextTick,
+  diff: diff,
 
   isIE: isIE,
 

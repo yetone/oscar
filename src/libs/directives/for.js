@@ -8,12 +8,12 @@ var undefined;
 module.exports = {
   compile: function(vm, $node, scope) {
     var $tmp = $node,
-        $ps = $node.previousSibling,
-        $ns = $node.nextSibling,
         $pn = $node.parentNode,
-        $cns = $node.childNodes,
+        $startCmt = utils.$DOC.createComment('oscar-for start'),
+        $endCmt = utils.$DOC.createComment('oscar-for end'),
         exp = $node.getAttribute(vm.$prefix + 'for'),
         expl = /([a-zA-Z_][a-zA-Z0-9_]*)\s+in\s+([a-zA-Z_][a-zA-Z0-9_]*)/.exec(exp),
+        acc = {},
         obj,
         isArray;
     if (!expl || expl.length !== 3) return;
@@ -24,87 +24,84 @@ module.exports = {
       str = utils.replaceEvalStr(str, kstr, '\'' + key + '\'');
       return str;
     }
-    function _render() {
-      var re = /\{\{(.*?)\}\}/g,
-          kstr;
-      !$node.inited && dom.removeElement($node);
-      utils.forEach(obj, function(item, key) {
-        if (utils.isStr(key) && ['$', '_'].indexOf(key.charAt(0)) > -1) return;
-        if (!utils.hasOwn.call(obj, key)) return;
-        if (isArray && isNaN(+key)) return;
-        kstr = '$key';
-        if (isArray) {
-          kstr = '$index';
+    $pn.insertBefore($endCmt, $node);
+    $pn.insertBefore($startCmt, $endCmt);
+    dom.removeElement($node);
+    obj.$startCmt = $startCmt;
+    obj.$endCmt = $endCmt;
+    function _render(key) {
+      var item = obj[key];
+      var re = /\{\{(.*?)\}\}/g;
+      if (utils.isStr(key) && ['$', '_'].indexOf(key.charAt(0)) > -1) return;
+      if (!utils.hasOwn.call(obj, key)) return;
+      if (isArray && isNaN(+key)) return;
+      var kstr = '$key';
+      if (isArray) {
+        kstr = '$index';
+      }
+      var $node = $tmp.cloneNode(true);
+      // 起名什么的最讨厌了！
+      (function __($node) {
+        if ($node.nodeType === 3) {
+          $node.textContent = $node.textContent.replace(re, function(_, a) {
+            a = _replace(a, kstr, key);
+            return '{{' + a + '}}';
+          });
+          return;
         }
-        $node = item.$el;
-        if (!$node) {
-          $node = $tmp.cloneNode(true);
-          // 起名什么的最讨厌了！
-          (function __($node) {
-            if ($node.nodeType === 3) {
-              $node.textContent = $node.textContent.replace(re, function(_, a) {
-                a = _replace(a, kstr, key);
-                return '{{' + a + '}}';
-              });
-              return;
-            }
-            var oscarAttrs = ['bind', 'on', 'class', 'if'],
-                attrs = utils.toArray($node.attributes),
-                $cns = utils.toArray($node.childNodes);
-            oscarAttrs.forEach(function(_attr) {
-              var attr = vm.$prefix + _attr,
-                a;
-              if (dom.hasAttribute($node, attr)) {
-                a = $node.getAttribute(attr);
-                a = _replace(a, kstr, key);
-                $node.setAttribute(attr, a);
-              }
-            });
-            attrs = attrs.filter(function(v) {
-              return v.name.indexOf(vm.$prefix) !== 0;
-            });
-            attrs.forEach(function(v) {
-              v.value = v.value.replace(re, function(_, a) {
-                a = _replace(a, kstr, key);
-                return '{{' + a + '}}';
-              });
-            });
-            $cns.forEach(function($n) {
-              __($n);
-            });
-          })($node);
-          item.$el = $node;
-        }
-
-        if (dom.contains(utils.$DOC, $node)) return;
-        if ($ns) {
-          $pn.insertBefore($node, $ns);
-        } else if ($ps && $ps.nextSibling) {
-          $pn.insertBefore($node, $ps.nextSibling);
-        } else if ($pn) {
-          $pn.appendChild($node);
-        }
-        $ps = $node.previousSibling;
-        $ns = $node.nextSibling;
-        $pn = $node.parentNode;
-        $cns = $node.childNodes;
-        var attrs = utils.toArray($node.attributes).filter(function(v) {
+        var oscarAttrs = ['bind', 'on', 'class', 'if'],
+            attrs = utils.toArray($node.attributes),
+            $cns = utils.toArray($node.childNodes);
+        oscarAttrs.forEach(function(_attr) {
+          var attr = vm.$prefix + _attr,
+            a;
+          if (dom.hasAttribute($node, attr)) {
+            a = $node.getAttribute(attr);
+            a = _replace(a, kstr, key);
+            $node.setAttribute(attr, a);
+          }
+        });
+        attrs = attrs.filter(function(v) {
           return v.name.indexOf(vm.$prefix) !== 0;
         });
         attrs.forEach(function(v) {
-          utils._bind(vm, v, 'value', scope);
+          v.value = v.value.replace(re, function(_, a) {
+            a = _replace(a, kstr, key);
+            return '{{' + a + '}}';
+          });
         });
-        obj.__observer__.on('remove:' + key, (function($node) {
-          return function() {
-            dom.removeElement($node);
-          }
-        })($node));
-        $node.inited = true;
-        vm.render($node);
+        $cns.forEach(function($n) {
+          __($n);
+        });
+      })($node);
+      var attrs = utils.toArray($node.attributes).filter(function(v) {
+        return v.name.indexOf(vm.$prefix) !== 0;
+      });
+      attrs.forEach(function(v) {
+        utils._bind(vm, v, 'value', scope);
+      });
+      $node.inited = true;
+
+      if (item.$el) {
+        dom.removeElement(item.$el);
+      }
+      $pn.insertBefore($node, obj.$endCmt);
+      item.$el = $node;
+      acc[key] = $node;
+      vm.render($node);
+    }
+    function _iterate() {
+      var differ = utils.diff(obj, acc);
+      utils.forEach(differ.remove, function(key) {
+        dom.removeElement(acc[key]);
+        delete acc[key];
+      });
+      utils.forEach(obj, function(_, key) {
+        _render(key);
       });
     }
-    obj.__observer__.watch('length', function() {
-      _render();
+    obj.__observer__.watch('$length', function() {
+      _iterate();
     });
   }
 };

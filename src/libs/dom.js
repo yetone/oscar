@@ -63,7 +63,7 @@ function fixContains(a, b) {
   return false;
 }
 function contains($el, $el0) {
-  if (typeof $el.contains === 'function') {
+  if ($el.contains) {
     return $el.contains($el0);
   }
   return fixContains($el, $el0)

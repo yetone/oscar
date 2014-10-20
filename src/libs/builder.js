@@ -12,43 +12,14 @@ utils.forEach(['push', 'pop', 'shift', 'unshift', 'splice'], function(method) {
   utils.defProtected(ArrayProxy, method, function() {
     var self = this;
     var oldL = self.length;
-    var idx;
-    var removed;
     if (self.__idx__ === undefined) {
       self.__idx__ = 0;
     }
     args = utils.toArray(arguments);
-    removed = utils.arrProto[method].apply(this, args);
-    switch (method) {
-      case 'splice':
-        if (!removed) break;
-        utils.forEach(utils.range(args[0], args[1]), function(v) {
-          self.__observer__.trigger('remove:' + v);
-          self.__observer__.off('set:' + v);
-          self.__observer__.off('change:' + v);
-        });
-        break;
-      case 'pop':
-        if (!removed) break;
-        self.__observer__.trigger('remove:' + (this.length - 1));
-        self.__observer__.off('set:' + (this.length - 1));
-        self.__observer__.off('change:' + (this.length - 1));
-        break;
-      case 'shift':
-        if (!removed) break;
-        idx = self.__idx__++;
-        self.__observer__.trigger('remove:' + idx);
-        self.__observer__.off('set:' + idx);
-        self.__observer__.off('change:' + idx);
-        break;
-      case 'unshift':
-        if (!removed) break;
-        self.__idx__ = 0;
-        break;
-    }
+    utils.arrProto[method].apply(this, args);
     buildObj(self, self.__parent__);
-    if (oldL !== this.length) {
-      self.__observer__.trigger('change:length');
+    if (oldL !== self.length) {
+      self.__observer__.trigger('change:$length');
     }
   });
 });

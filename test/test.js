@@ -170,10 +170,23 @@ describe('utils', function() {
   describe('splitPath', function() {
     var paths = ['name', 'xx.yy.zz', 'xx.yy', 'xx.yy.aa', 'xx.bb', 'yy.xx.ii', 'yy.xx.ii.cc', 'yy.xx.oo'];
     var obj =utils.splitPath(paths);
-    assert.equal('*', obj['name'].join('|'));
+    assert.equal('name', obj['*'].join('|'));
     assert.equal('yy|bb', obj['xx'].join('|'));
     assert.equal('zz|aa', obj['xx.yy'].join('|'));
     assert.equal('ii|oo', obj['yy.xx'].join('|'));
     assert.equal('cc', obj['yy.xx.ii'].join('|'));
+  });
+  describe('diff', function() {
+    var a = {a:0, b: 1, c: 2};
+    var b = {a:1, c: 2, d: 3, e: 4, f: 5};
+    var c = {};
+    var differ = utils.diff(a, b);
+    var differ0 = utils.diff(a, c);
+    assert.equal('b', differ.add.join('|'));
+    assert.equal('a', differ.change.join('|'));
+    assert.equal('d|e|f', differ.remove.join('|'));
+    assert.equal('a|b|c', differ0.add.join('|'));
+    assert.equal('', differ0.change.join('|'));
+    assert.equal('', differ0.remove.join('|'));
   });
 });
