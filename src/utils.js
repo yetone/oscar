@@ -10,7 +10,6 @@ var arrProto = window.Array.prototype,
     getObjKeys = window.Object.keys,
     isArray = window.Array.isArray,
     isIE = !-[1,],
-    helpers = require('./libs/helpers'),
     $DOC = window.document || {},
     undefined;
 // 补丁，为了某些浏览器
@@ -44,7 +43,7 @@ var arrProto = window.Array.prototype,
       };
     // IE6-8 使用 VBScript 类的 set get 语句实现. from 司徒正美
     } else if (window.VBArray) {
-      defs = helpers.getIEDefineProperties();
+      // fuck IE!!!
     }
   }
 
