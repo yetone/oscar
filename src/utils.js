@@ -444,7 +444,7 @@ function defProtected(obj, key, value, enumerable, writable) {
     enumerable: enumerable,
     writable: writable,
     configurable: true
-  })
+  });
 }
 function diff(a, b) {
   // a is new, b is old
